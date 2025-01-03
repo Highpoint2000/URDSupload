@@ -13,7 +13,6 @@
 const path = require('path');
 const fs = require('fs');
 const zlib = require('zlib');
-const axios = require('axios'); 
 const FormData = require('form-data');
 const { logInfo, logError, logWarn } = require('./../../server/console');
 
@@ -26,14 +25,13 @@ const configFilePath = path.join(__dirname, './../../plugins_configs/urds-upload
 
 // Default values for the configuration file
 const defaultConfig = {
-	URDSautoUpload: '', 
-    FMLIST_OM_ID: '',                    // To use the logbook function, please enter your OM ID here, for example: FMLIST_OM_ID: '1234' - this is only necessary if no OMID is entered under FMLIST INTEGRATION on the web server
-    FMLIST_EMAIL: '',                     // To use the FMDX Scanner function, please enter your EMAIL here, for example: FMLIST_EMAIL: 'xxx@xxx.com' - this is only necessary if no email is entered on the web server or it is another email adress
-	ServerName: '', 					//RaspiId
-	ServerDescription: '',				// Comments
-	PublicationMode: 'public',				// public, owner or restricted
-	OperatingMode: 'fixed'				// fixed or mobile
-	
+	URDSautoUpload: 'on', 			// Set Auto Upload after 0:00 UTC 'on' or 'off'
+    FMLIST_OM_ID: '',               // Enter your OM ID here, for example: FMLIST_OM_ID: '1234', if no OMID is entered under FMLIST INTEGRATION on the web server
+    FMLIST_EMAIL: '',               // Enter your EMAIL here, for example: FMLIST_EMAIL: 'xxx@xxx.com', if no email is entered under IDENTIFICATION & MAP on the web server or it is another email adress
+	ServerName: '', 				// Enter your RaspiID or another name for the server, if left blank the name will be taken from the web server
+	ServerDescription: '',			// Enter a comment or description for the server, if left blank the name will be taken from the web server
+	PublicationMode: 'public',		// Enter the publishing mode: 'public', 'owner' or 'restricted' (default: 'public')
+	OperatingMode: 'fixed'			// Enter 'mobile' or 'fixed' for stationary operation
 };
 
 // Function to merge default config with existing config
@@ -167,6 +165,7 @@ function checkAndInstallNewModules() {
 }
 
 checkAndInstallNewModules();
+const axios = require('axios'); 
 
 // Directory paths
 const logDir = path.join(__dirname, '../../web/logs');
@@ -360,15 +359,20 @@ function copyCsvFilesWithHeader(ws, source) {
   }, 500); // Check every 500ms
 }
 
-// Helper function to process a single file from logDir
 function processFile(file, baseDir, filesToUpload, pendingGzCreations) {
   const filePath = path.join(baseDir, file);
   const uploadFilePath = path.join(uploadDir, file);
   const gzFileName = file.replace('_fm_rds.csv', '_upload.csv.gz');
   const gzFilePath = path.join(uploadDir, gzFileName);
 
+  // Check if file name ends with '_fm_rds.csv' and ignore 'SCANNER*.csv'
+  if (!file.endsWith('_fm_rds.csv') || file.startsWith('SCANNER') || file.startsWith('scan')) {
+    //logInfo(`Ignoring file ${file} as it does not match the criteria.`);
+    return;
+  }
+
   const fileStat = fs.statSync(filePath);
-  if (fileStat.isFile() && file.endsWith('.csv')) {
+  if (fileStat.isFile()) {
     if (fileStat.size === 0) {
       fs.unlinkSync(filePath);
       logInfo(`URDS Upload deleted empty CSV file ${file}`);
@@ -585,7 +589,12 @@ function scheduleTask() {
     // Calculate the remaining time until midnight UTC
     const now = new Date();
     const midnightUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0));
-    const timeUntilMidnight = midnightUTC - now;
+    let timeUntilMidnight = midnightUTC - now;
+
+    // If it's already past midnight UTC, calculate time until the next midnight
+    if (timeUntilMidnight < 0) {
+        timeUntilMidnight += 24 * 60 * 60 * 1000; // Add 24 hours in milliseconds
+    }
 
     logInfo(`URDS Auto Upload scheduled to start at UTC midnight.`);
 
@@ -597,7 +606,7 @@ function scheduleTask() {
         const executeTask = () => {
             if (currentStatus === 'on') {
                 // Execute the function with a maximum wait time of 120 minutes
-                const MAX_MINUTES = 1;
+                const MAX_MINUTES = 120;
                 const waitSeconds = Math.floor(Math.random() * MAX_MINUTES * 60);
 
                 logInfo(`URDS Auto Upload waiting for ${Math.floor(waitSeconds / 60)} minutes and ${waitSeconds % 60} seconds.`);
@@ -627,7 +636,7 @@ function scheduleTask() {
 }
 
 // Start the scheduled task
-if (URDSautoUpload) {
+if (URDSautoUpload && currentStatus === 'on') {
     scheduleTask();
 }
 
