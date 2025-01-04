@@ -289,40 +289,56 @@ const uploadAllFiles = async (ws,source) => {
 
 function countPicodesAndPSInfo(fileContent) {
   const lines = fileContent.split('\n');
-  const distinctPicodes = new Set(); // Set to store distinct picodes
-  const distinctPSInfos = new Set(); // Set to store distinct PS infos
-
+  const freqData = {}; // Objekt zur Speicherung der Frequenzdaten
+  
+  // Durchlaufe alle Zeilen des Inputtexts
   lines.forEach(line => {
     const columns = line.split(',');
 
-    // Check if there are at least 14 columns (index 13) and if the 14th column has a value (picode)
-    if (columns.length > 13) {
-      const picode = columns[13].trim(); // 14th column (index 13)
-      if (picode && !picode.includes('?')) {
-        distinctPicodes.add(picode); // Add to the set of distinct picodes
-      }
-    }
-
-    // Check if there are at least 16 columns (index 15) and if the 16th column has a value (PS info)
+    // Sicherstellen, dass genügend Spalten vorhanden sind
     if (columns.length > 15) {
-      const psInfo = columns[15].trim(); // 16th column (index 15)
+      const freq = columns[3].trim(); // 4. Spalte (Index 3) für Frequenz
+      const picode = columns[13].trim(); // 14. Spalte (Index 13) für Picodes
+      const psInfo = columns[15].trim(); // 16. Spalte (Index 15) für PS Info
+
+      // Falls die Frequenz noch nicht im Objekt ist, initialisieren
+      if (!freqData[freq]) {
+        freqData[freq] = {
+          picodes: new Set(), // Set für unterschiedliche Picodes
+          psInfo: new Set()  // Set für unterschiedliche PS Infos
+        };
+      }
+
+      // Picodes und PS Infos zur jeweiligen Frequenz hinzufügen
+      if (picode && !picode.includes('?')) {
+        freqData[freq].picodes.add(picode); // Picodes setzen
+      }
+
       if (psInfo && !psInfo.includes('?')) {
-        distinctPSInfos.add(psInfo); // Add to the set of distinct PS infos
+        freqData[freq].psInfo.add(psInfo); // PS Infos setzen
       }
     }
   });
 
-  // The count of distinct picodes
-  const picodeCount = distinctPicodes.size;
+  // Zählen der Gesamtwerte
+  let picodeCount = 0;
+  let psInfoCount = 0;
+  
+  // Zählen der Picodes und PS Infos über alle Frequenzen
+  for (const freq in freqData) {
+    picodeCount += freqData[freq].picodes.size; // Anzahl der unterschiedlichen Picodes je Frequenz
+    psInfoCount += freqData[freq].psInfo.size; // Anzahl der unterschiedlichen PS Infos je Frequenz
+  }
 
-  // The count of distinct PS info
-  const psInfoCount = distinctPSInfos.size;
-
-  // The difference between the distinct picodes and distinct PS infos
+  // Berechnung der Differenz
   const distinctPicodeCount = picodeCount - psInfoCount;
 
   return { picodeCount, psInfoCount, distinctPicodeCount };
 }
+
+
+
+
 
 function copyCsvFilesWithHeader(ws, source) {
   // Ensure the destination directories exist
