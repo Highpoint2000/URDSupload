@@ -134,18 +134,9 @@ if (!ServerDescription) {
 	ServerDescription = config.identification.tunerDesc; 
 }
 
-let header = `10,"${FMLIST_EMAIL}"\n`;
-const singleLineServerName = ServerName.replace(/\n/g, ' '); // Remove line breaks from ServerName
-header += `11,"${FMLIST_OM_ID}","${singleLineServerName}"\n`;
-const singleLineDescription = ServerDescription.replace(/\n/g, ' '); // Remove line breaks from ServerDescription
-header += `12,"${singleLineDescription}"\n`;
-header += `13,"${PublicationMode}",""\n`;
-header += `14,"${OperatingMode}"\n`;
-
 const sentMessages = new Set();
-
 const { execSync } = require('child_process');
-const NewModules = ['axios', 'form-data'];
+const NewModules = ['axios', 'form-data', 'os'];
 
 function checkAndInstallNewModules() {
     NewModules.forEach(module => {
@@ -164,8 +155,20 @@ function checkAndInstallNewModules() {
 }
 
 checkAndInstallNewModules();
+
 const axios = require('axios'); 
 const FormData = require('form-data');
+const os = require('os');
+
+let header = `10,"${FMLIST_EMAIL}"\n`;
+const singleLineServerName = ServerName.replace(/\n/g, ' '); // Remove line breaks from ServerName
+header += `11,"${FMLIST_OM_ID}","${singleLineServerName}"\n`;
+header += `111,"os-release ${os.platform()} ${os.release()}"\n`;
+header += `112,"architecture ${os.arch()}"\n`;
+const singleLineDescription = ServerDescription.replace(/\n/g, ' '); // Remove line breaks from ServerDescription
+header += `12,"${singleLineDescription}"\n`;
+header += `13,"${PublicationMode}",""\n`;
+header += `14,"${OperatingMode}"\n`;
 
 // Directory paths
 const logDir = path.join(__dirname, '../../web/logs');
@@ -335,10 +338,6 @@ function countPicodesAndPSInfo(fileContent) {
 
   return { picodeCount, psInfoCount, distinctPicodeCount };
 }
-
-
-
-
 
 function copyCsvFilesWithHeader(ws, source) {
   // Ensure the destination directories exist
