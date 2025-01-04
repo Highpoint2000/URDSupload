@@ -1,8 +1,8 @@
 ////////////////////////////////////////////////////////////////
 ///                                                          ///
-///  URDS UPLOADER SERVER SCRIPT FOR FM-DX-WEBSERVER (V1.0a) ///
+///  URDS UPLOADER SERVER SCRIPT FOR FM-DX-WEBSERVER (V1.0)  ///
 ///                                                          ///
-///  by Highpoint                last update: 03.01.25       ///
+///  by Highpoint                last update: 03.01.24       ///
 ///                                                          ///
 ///  https://github.com/Highpoint2000/URDSupload             ///
 ///                                                          ///
@@ -13,6 +13,7 @@
 const path = require('path');
 const fs = require('fs');
 const zlib = require('zlib');
+const FormData = require('form-data');
 const { logInfo, logError, logWarn } = require('./../../server/console');
 
 function sanitizeInput(input) {
@@ -145,7 +146,7 @@ header += `14,"${OperatingMode}"\n`;
 const sentMessages = new Set();
 
 const { execSync } = require('child_process');
-const NewModules = ['axios', 'form-data'];
+const NewModules = ['axios'];
 
 function checkAndInstallNewModules() {
     NewModules.forEach(module => {
@@ -165,7 +166,6 @@ function checkAndInstallNewModules() {
 
 checkAndInstallNewModules();
 const axios = require('axios'); 
-const FormData = require('form-data');
 
 // Directory paths
 const logDir = path.join(__dirname, '../../web/logs');
@@ -287,58 +287,39 @@ const uploadAllFiles = async (ws,source) => {
 	
 };
 
+// Function to count picodes and PS info, and track distinct picodes
 function countPicodesAndPSInfo(fileContent) {
   const lines = fileContent.split('\n');
-  const freqData = {}; // Objekt zur Speicherung der Frequenzdaten
-  
-  // Durchlaufe alle Zeilen des Inputtexts
+  let picodeCount = 0;
+  let psInfoCount = 0;
+  const distinctPicodes = new Set(); // Set to store distinct picodes
+
   lines.forEach(line => {
     const columns = line.split(',');
 
-    // Sicherstellen, dass genügend Spalten vorhanden sind
-    if (columns.length > 15) {
-      const freq = columns[3].trim(); // 4. Spalte (Index 3) für Frequenz
-      const picode = columns[13].trim(); // 14. Spalte (Index 13) für Picodes
-      const psInfo = columns[15].trim(); // 16. Spalte (Index 15) für PS Info
-
-      // Falls die Frequenz noch nicht im Objekt ist, initialisieren
-      if (!freqData[freq]) {
-        freqData[freq] = {
-          picodes: new Set(), // Set für unterschiedliche Picodes
-          psInfo: new Set()  // Set für unterschiedliche PS Infos
-        };
-      }
-
-      // Picodes und PS Infos zur jeweiligen Frequenz hinzufügen
+    // Check if there are at least 14 columns (index 13) and if the 14th column has a value (picode)
+    if (columns.length > 13) {
+      const picode = columns[13].trim(); // 14th column (index 13)
       if (picode && !picode.includes('?')) {
-        freqData[freq].picodes.add(picode); // Picodes setzen
+        picodeCount++;
+        distinctPicodes.add(picode); // Add to the set of distinct picodes
       }
+    }
 
+    // Check if there are at least 16 columns (index 15) and if the 16th column has a value (PS info)
+    if (columns.length > 15) {
+      const psInfo = columns[15].trim(); // 16th column (index 15)
       if (psInfo && !psInfo.includes('?')) {
-        freqData[freq].psInfo.add(psInfo); // PS Infos setzen
+        psInfoCount++;
       }
     }
   });
 
-  // Zählen der Gesamtwerte
-  let picodeCount = 0;
-  let psInfoCount = 0;
-  
-  // Zählen der Picodes und PS Infos über alle Frequenzen
-  for (const freq in freqData) {
-    picodeCount += freqData[freq].picodes.size; // Anzahl der unterschiedlichen Picodes je Frequenz
-    psInfoCount += freqData[freq].psInfo.size; // Anzahl der unterschiedlichen PS Infos je Frequenz
-  }
-
-  // Berechnung der Differenz
-  const distinctPicodeCount = picodeCount - psInfoCount;
+  // The count of distinct picodes
+  const distinctPicodeCount = distinctPicodes.size;
 
   return { picodeCount, psInfoCount, distinctPicodeCount };
 }
-
-
-
-
 
 function copyCsvFilesWithHeader(ws, source) {
   // Ensure the destination directories exist
