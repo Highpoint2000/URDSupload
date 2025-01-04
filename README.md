@@ -38,8 +38,8 @@ The following variables can be changed in the urds-upload.json:
 
 ## Important notes: 
 
-- To start the upload manually, press and hold the URDS upload button. A short time later a toast message appears indicating whether the upload worked
-- The automatic upload starts at 0:00 UTC with a random delay time (max. 120 minutes)
+- To start the upload manually, press the URDS upload button. A short time later a toast message appears indicating whether the upload worked
+- To enable/disable automatic upload, long press the URDS upload button. The automatic upload starts at 0:00 UTC with a random delay time (max. 120 minutes)
 - The CSV log files originally created by the scanner plugin are saved as .backup under /web/logs, all uploaded files are saved under /web/logs/sent after the upload
 - Processing on the FMLIST server takes different amounts of time and only takes place if the OMID and email address match the FMLIST account details 
   
