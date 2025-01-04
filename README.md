@@ -5,7 +5,7 @@ This plugin provides automaticly and manual upload functions for the scanner plu
 ![image](https://github.com/user-attachments/assets/d52b2e22-59d6-4b64-81c6-449300ef0f36)
 
 
-### v1.0a (only use with Scanner Plugin!)
+## v1.0a (only use with Scanner Plugin!)
 
 - URDS upload button function swapped: long press toggles auto upload mode / short press starts manual upload
 - Fixed problem with missing form-data module
@@ -45,6 +45,6 @@ The following variables can be changed in the urds-upload.json:
   
 ## History: 
   
-## v1.0 (only use with Scanner Plugin!)
+### v1.0 (only use with Scanner Plugin!)
 
 - first edition
