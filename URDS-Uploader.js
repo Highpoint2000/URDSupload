@@ -1,7 +1,7 @@
 // Plugin configuration, this is used in the administration when plugins are loaded
 var pluginConfig = {
     name: 'URDS Uploader',
-    version: '1.0',
+    version: '1.0a',
     author: 'Highpoint',
     frontEndPath: 'URDS-Uploader/urds-upload.js'
 }
