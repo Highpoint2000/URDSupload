@@ -1,7 +1,7 @@
 (() => {
 ////////////////////////////////////////////////////////////////
 ///                                                          ///
-///  URDS UPLOADER CLIENT SCRIPT FOR FM-DX-WEBSERVER (V1.0)  ///
+///  URDS UPLOADER CLIENT SCRIPT FOR FM-DX-WEBSERVER (V1.0a) ///
 ///                                                          ///
 ///  by Highpoint                last update: 03.01.25       ///
 ///                                                          ///
@@ -15,7 +15,7 @@ const updateInfo = true; // Enable or disable version check
 
 /////////////////////////////////////////////////////////////////
 
-    const plugin_version = '1.0';
+    const plugin_version = '1.0a';
 	const plugin_path = 'https://raw.githubusercontent.com/highpoint2000/URDSupload/';
 	const plugin_JSfile = 'main/URDS-Uploader/urds-upload.js'
 	const plugin_name = 'URDS Uploader';
@@ -247,84 +247,93 @@ const updateInfo = true; // Enable or disable version check
         }
     }
 
-    // Update button status based on whether alerts are active
-    function setButtonStatus(isActive) {
-        if (URDSButton) {
-            // Adjust classes based on active/inactive status
-            URDSButton.classList.toggle('bg-color-4', isActive);
-            URDSButton.classList.toggle('bg-color-2', !isActive);
-            console.log(`Button status set to: ${isActive ? 'Active' : 'Inactive'}`);
-            URDSActive = isActive;
-        }
+// Update button status based on whether alerts are active
+function setButtonStatus(isActive) {
+    if (URDSButton) {
+        // Adjust classes based on active/inactive status
+        URDSButton.classList.toggle('bg-color-4', isActive);
+        URDSButton.classList.toggle('bg-color-2', !isActive);
+        console.log(`Button status set to: ${isActive ? 'Active' : 'Inactive'}`);
+        URDSActive = isActive;
     }
+}
 
-    // Create the alert button and append it to the button wrapper
-    const URDSButton = document.createElement('button');
+// Create the alert button and append it to the button wrapper
+const URDSButton = document.createElement('button');
 
-    function initializeURDSButton() {
-        const buttonWrapper = document.getElementById('button-wrapper') || createDefaultButtonWrapper();
+function initializeURDSButton() {
+    const buttonWrapper = document.getElementById('button-wrapper') || createDefaultButtonWrapper();
 
-        if (buttonWrapper) {
-            URDSButton.id = 'URDSupload-on-off';
-            URDSButton.classList.add('hide-phone');
-            URDSButton.setAttribute('data-tooltip', 'URDS Upload on/off');
-            URDSButton.innerHTML = '<strong>URDS Upload</strong>';
-            URDSButton.style.marginTop = '16px';
-            URDSButton.style.marginLeft = '5px';
-            URDSButton.style.width = '100px';
-            URDSButton.classList.add('bg-color-2');
-            URDSButton.style.borderRadius = '0px';
-            URDSButton.title = `Plugin Version: ${plugin_version}`;
-            buttonWrapper.appendChild(URDSButton);
-            URDSButton.addEventListener('mousedown', startPressTimer);
-            URDSButton.addEventListener('mouseup', cancelPressTimer);
-            URDSButton.addEventListener('mouseleave', cancelPressTimer);
-            console.log('URDS Upload Button successfully added.');
-        } else {
-            console.error('Unable to add button.');
-        }
+    if (buttonWrapper) {
+        URDSButton.id = 'URDSupload-on-off';
+        URDSButton.classList.add('hide-phone');
+        URDSButton.setAttribute('data-tooltip', 'URDS Upload on/off');
+        URDSButton.innerHTML = '<strong>URDS Upload</strong>';
+        URDSButton.style.marginTop = '16px';
+        URDSButton.style.marginLeft = '5px';
+        URDSButton.style.width = '100px';
+        URDSButton.classList.add('bg-color-2');
+        URDSButton.style.borderRadius = '0px';
+        URDSButton.title = `Plugin Version: ${plugin_version}`;
+        buttonWrapper.appendChild(URDSButton);
+        URDSButton.addEventListener('mousedown', startPressTimer);
+        URDSButton.addEventListener('mouseup', cancelPressTimer);
+        URDSButton.addEventListener('mouseleave', cancelPressTimer);
+        console.log('URDS Upload Button successfully added.');
+    } else {
+        console.error('Unable to add button.');
     }
+}
 
-    // Create a default button wrapper if it does not exist
-    function createDefaultButtonWrapper() {
-        const wrapperElement = document.querySelector('.tuner-info');
-        if (wrapperElement) {
-            const buttonWrapper = document.createElement('div');
-            buttonWrapper.classList.add('button-wrapper');
-            buttonWrapper.id = 'button-wrapper';
-            buttonWrapper.appendChild(URDSButton);
-            wrapperElement.appendChild(buttonWrapper);
-            wrapperElement.appendChild(document.createElement('br'));
-            return buttonWrapper;
-        } else {
-            console.error('Standard location not found. Unable to add URDS Upload Button.');
-            return null;
-        }
+// Create a default button wrapper if it does not exist
+function createDefaultButtonWrapper() {
+    const wrapperElement = document.querySelector('.tuner-info');
+    if (wrapperElement) {
+        const buttonWrapper = document.createElement('div');
+        buttonWrapper.classList.add('button-wrapper');
+        buttonWrapper.id = 'button-wrapper';
+        buttonWrapper.appendChild(URDSButton);
+        wrapperElement.appendChild(buttonWrapper);
+        wrapperElement.appendChild(document.createElement('br'));
+        return buttonWrapper;
+    } else {
+        console.error('Standard location not found. Unable to add URDS Upload Button.');
+        return null;
     }
+}
 
-    // Start a timer to handle long presses of the button
-    function startPressTimer() {
-        buttonPressStarted = Date.now();
-        pressTimer = setTimeout(() => {
-            URDSstartUpload();
-            buttonPressStarted = null;
-        }, 1000);
-    }
-
-    // Cancel the press timer and toggle alert status if needed
-    function cancelPressTimer() {
-        clearTimeout(pressTimer);
-        if (buttonPressStarted) {
-            toggleAlert();
-			if (isTuneAuthenticated) {
-				if (!URDSActive) {
-					console.log(`URDS Upload deactivated`);
-					sendToast('info', 'URDS Upload', 'Plugin deactivated', false, false);
-				}
-			}
-        }
+// Start a timer to handle long presses of the button
+function startPressTimer() {
+    buttonPressStarted = Date.now();
+    pressTimer = setTimeout(() => {
+        // If it's a long press, toggle the button's active/inactive status
+        toggleButtonStatus();
         buttonPressStarted = null;
+    }, 1000);  // Threshold for long press (1 second)
+}
+
+// Cancel the press timer and execute a short press action
+function cancelPressTimer() {
+    clearTimeout(pressTimer);
+    if (buttonPressStarted) {
+        // If it's a short press, trigger the URDSstartUpload function
+        URDSstartUpload();
     }
+    buttonPressStarted = null;
+}
+
+// Toggle the button status (active/inactive)
+function toggleButtonStatus() {
+    setButtonStatus(!URDSActive);
+    if (!URDSActive) {
+        console.log(`URDS Upload activated`);
+        sendToast('info', 'URDS Upload', 'Plugin activated', false, false);
+    } else {
+        console.log(`URDS Upload deactivated`);
+        sendToast('info', 'URDS Upload', 'Plugin deactivated', false, false);
+    }
+}
+
 
     // Funktion zum Senden einer Test-E-Mail
 async function URDSstartUpload() {
