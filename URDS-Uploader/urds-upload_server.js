@@ -1,8 +1,8 @@
 ////////////////////////////////////////////////////////////////
 ///                                                          ///
-///  URDS UPLOADER SERVER SCRIPT FOR FM-DX-WEBSERVER (V1.0)  ///
+///  URDS UPLOADER SERVER SCRIPT FOR FM-DX-WEBSERVER (V1.0a) ///
 ///                                                          ///
-///  by Highpoint                last update: 03.01.24       ///
+///  by Highpoint                last update: 03.01.25       ///
 ///                                                          ///
 ///  https://github.com/Highpoint2000/URDSupload             ///
 ///                                                          ///
@@ -13,7 +13,6 @@
 const path = require('path');
 const fs = require('fs');
 const zlib = require('zlib');
-const FormData = require('form-data');
 const { logInfo, logError, logWarn } = require('./../../server/console');
 
 function sanitizeInput(input) {
@@ -146,7 +145,7 @@ header += `14,"${OperatingMode}"\n`;
 const sentMessages = new Set();
 
 const { execSync } = require('child_process');
-const NewModules = ['axios'];
+const NewModules = ['axios', 'form-data'];
 
 function checkAndInstallNewModules() {
     NewModules.forEach(module => {
@@ -166,6 +165,7 @@ function checkAndInstallNewModules() {
 
 checkAndInstallNewModules();
 const axios = require('axios'); 
+const FormData = require('form-data');
 
 // Directory paths
 const logDir = path.join(__dirname, '../../web/logs');
@@ -287,12 +287,10 @@ const uploadAllFiles = async (ws,source) => {
 	
 };
 
-// Function to count picodes and PS info, and track distinct picodes
 function countPicodesAndPSInfo(fileContent) {
   const lines = fileContent.split('\n');
-  let picodeCount = 0;
-  let psInfoCount = 0;
   const distinctPicodes = new Set(); // Set to store distinct picodes
+  const distinctPSInfos = new Set(); // Set to store distinct PS infos
 
   lines.forEach(line => {
     const columns = line.split(',');
@@ -301,7 +299,6 @@ function countPicodesAndPSInfo(fileContent) {
     if (columns.length > 13) {
       const picode = columns[13].trim(); // 14th column (index 13)
       if (picode && !picode.includes('?')) {
-        picodeCount++;
         distinctPicodes.add(picode); // Add to the set of distinct picodes
       }
     }
@@ -310,13 +307,19 @@ function countPicodesAndPSInfo(fileContent) {
     if (columns.length > 15) {
       const psInfo = columns[15].trim(); // 16th column (index 15)
       if (psInfo && !psInfo.includes('?')) {
-        psInfoCount++;
+        distinctPSInfos.add(psInfo); // Add to the set of distinct PS infos
       }
     }
   });
 
   // The count of distinct picodes
-  const distinctPicodeCount = distinctPicodes.size;
+  const picodeCount = distinctPicodes.size;
+
+  // The count of distinct PS info
+  const psInfoCount = distinctPSInfos.size;
+
+  // The difference between the distinct picodes and distinct PS infos
+  const distinctPicodeCount = picodeCount - psInfoCount;
 
   return { picodeCount, psInfoCount, distinctPicodeCount };
 }
