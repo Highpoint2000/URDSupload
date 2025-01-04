@@ -205,13 +205,17 @@ const updateInfo = true; // Enable or disable version check
                             setButtonStatus(URDSActive); // Update button immediately
                         }
 
-						if (isTuneAuthenticated && status === 'on' && (eventData.target === '000000000000' || eventData.target === sessionId)) {
+						if (isTuneAuthenticated && (eventData.target === '000000000000' || eventData.target === sessionId)) {
 							const StatusMessage = `URDS Upload ${URDSActive ? 'activated' : 'deactivated'}`;
 							if (status === 'on') {
-								const DetailsMessage = URDSActive ? ` URDSupload ist activated` : '';
+								const DetailsMessage = URDSActive ? `URDS Upload activated` : '';
 								console.log(`${StatusMessage}${DetailsMessage}`);
-								sendToast('info', 'URDS Upload', `is activated`, false, false);
-								} 
+								sendToast('info', 'URDS Upload', `Plugin activated`, false, false);
+							} else {
+								const DetailsMessage = URDSActive ? `URDS Upload deactivated` : '';
+								console.log(`${StatusMessage}${DetailsMessage}`);
+								sendToast('info', 'URDS Upload', `Plugin deactivated`, false, false);
+							}
 						}	 
 						break;
                 }
@@ -307,7 +311,7 @@ function startPressTimer() {
     buttonPressStarted = Date.now();
     pressTimer = setTimeout(() => {
         // If it's a long press, toggle the button's active/inactive status
-        toggleButtonStatus();
+        toggleAlert();
         buttonPressStarted = null;
     }, 1000);  // Threshold for long press (1 second)
 }
@@ -320,18 +324,6 @@ function cancelPressTimer() {
         URDSstartUpload();
     }
     buttonPressStarted = null;
-}
-
-// Toggle the button status (active/inactive)
-function toggleButtonStatus() {
-    setButtonStatus(!URDSActive);
-    if (!URDSActive) {
-        console.log(`URDS Upload activated`);
-        sendToast('info', 'URDS Upload', 'Plugin activated', false, false);
-    } else {
-        console.log(`URDS Upload deactivated`);
-        sendToast('info', 'URDS Upload', 'Plugin deactivated', false, false);
-    }
 }
 
 
