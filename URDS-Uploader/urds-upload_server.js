@@ -1,8 +1,8 @@
 ////////////////////////////////////////////////////////////////
 ///                                                          ///
-///  URDS UPLOADER SERVER SCRIPT FOR FM-DX-WEBSERVER (V1.0a) ///
+///  URDS UPLOADER SERVER SCRIPT FOR FM-DX-WEBSERVER (V1.0b) ///
 ///                                                          ///
-///  by Highpoint                last update: 03.01.25       ///
+///  by Highpoint                last update: 04.01.25       ///
 ///                                                          ///
 ///  https://github.com/Highpoint2000/URDSupload             ///
 ///                                                          ///
@@ -10,6 +10,7 @@
 
 ///  This plugin only works from web server version 1.2.8.1!!!
 
+const plugin_version = '1.0b';
 const path = require('path');
 const fs = require('fs');
 const zlib = require('zlib');
@@ -165,6 +166,7 @@ const singleLineServerName = ServerName.replace(/\n/g, ' '); // Remove line brea
 header += `11,"${FMLIST_OM_ID}","${singleLineServerName}"\n`;
 header += `111,"os-release ${os.platform()} ${os.release()}"\n`;
 header += `112,"architecture ${os.arch()}"\n`;
+header += `113,"plugin-version ${plugin_version}"\n`;
 const singleLineDescription = ServerDescription.replace(/\n/g, ' '); // Remove line breaks from ServerDescription
 header += `12,"${singleLineDescription}"\n`;
 header += `13,"${PublicationMode}",""\n`;
@@ -292,49 +294,54 @@ const uploadAllFiles = async (ws,source) => {
 
 function countPicodesAndPSInfo(fileContent) {
   const lines = fileContent.split('\n');
-  const freqData = {}; // Objekt zur Speicherung der Frequenzdaten
+  const freqData = {}; // Object to store frequency data
   
-  // Durchlaufe alle Zeilen des Inputtexts
+  // Iterate through all lines of the input text
   lines.forEach(line => {
     const columns = line.split(',');
 
-    // Sicherstellen, dass genügend Spalten vorhanden sind
+    // Ensure there are enough columns
     if (columns.length > 15) {
-      const freq = columns[3].trim(); // 4. Spalte (Index 3) für Frequenz
-      const picode = columns[13].trim(); // 14. Spalte (Index 13) für Picodes
-      const psInfo = columns[15].trim(); // 16. Spalte (Index 15) für PS Info
+      const freq = columns[3].trim(); // 4th column (Index 3) for Frequency
+      const picode = columns[13].trim(); // 14th column (Index 13) for Picodes
+      const psInfo = columns[15].trim(); // 16th column (Index 15) for PS Info
 
-      // Falls die Frequenz noch nicht im Objekt ist, initialisieren
+      // Initialize if the frequency doesn't exist in the object
       if (!freqData[freq]) {
         freqData[freq] = {
-          picodes: new Set(), // Set für unterschiedliche Picodes
-          psInfo: new Set()  // Set für unterschiedliche PS Infos
+          picodes: new Set(), // Set for unique Picodes
+          psInfo: new Set(),  // Set for unique PS Infos
+          picodesWithoutPSInfo: new Set() // Set for Picodes without PS Info
         };
       }
 
-      // Picodes und PS Infos zur jeweiligen Frequenz hinzufügen
+      // Add Picodes and PS Infos to the corresponding frequency
       if (picode && !picode.includes('?')) {
-        freqData[freq].picodes.add(picode); // Picodes setzen
+        freqData[freq].picodes.add(picode); // Add Picodes to the set
       }
 
       if (psInfo && !psInfo.includes('?')) {
-        freqData[freq].psInfo.add(psInfo); // PS Infos setzen
+        freqData[freq].psInfo.add(psInfo); // Add PS Infos to the set
+      }
+
+      // If there is no valid PS Info for this Picode, add it to the set
+      if (picode && !psInfo.includes('?') && !freqData[freq].psInfo.has(psInfo)) {
+        freqData[freq].picodesWithoutPSInfo.add(picode); // Add Picodes without PS Info
       }
     }
   });
 
-  // Zählen der Gesamtwerte
+  // Count the totals
   let picodeCount = 0;
   let psInfoCount = 0;
+  let distinctPicodeCount = 0;
   
-  // Zählen der Picodes und PS Infos über alle Frequenzen
+  // Count Picodes, PS Infos, and Picodes without PS Info across all frequencies
   for (const freq in freqData) {
-    picodeCount += freqData[freq].picodes.size; // Anzahl der unterschiedlichen Picodes je Frequenz
-    psInfoCount += freqData[freq].psInfo.size; // Anzahl der unterschiedlichen PS Infos je Frequenz
+    picodeCount += freqData[freq].picodes.size; // Count unique Picodes per frequency
+    psInfoCount += freqData[freq].psInfo.size; // Count unique PS Infos per frequency
+    distinctPicodeCount += freqData[freq].picodesWithoutPSInfo.size; // Count Picodes without PS Info
   }
-
-  // Berechnung der Differenz
-  const distinctPicodeCount = picodeCount - psInfoCount;
 
   return { picodeCount, psInfoCount, distinctPicodeCount };
 }
