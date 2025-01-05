@@ -10,7 +10,7 @@
 
 ///  This plugin only works from web server version 1.2.8.1!!!
 
-const plugin_version = '1.0b';
+const plugin_version = '1.0a';
 const path = require('path');
 const fs = require('fs');
 const zlib = require('zlib');
