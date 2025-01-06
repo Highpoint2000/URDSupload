@@ -1,8 +1,8 @@
 ////////////////////////////////////////////////////////////////
 ///                                                          ///
-///  URDS UPLOADER SERVER SCRIPT FOR FM-DX-WEBSERVER (V1.0a) ///
+///  URDS UPLOADER SERVER SCRIPT FOR FM-DX-WEBSERVER (V1.0b) ///
 ///                                                          ///
-///  by Highpoint                last update: 04.01.25       ///
+///  by Highpoint                last update: 06.01.25       ///
 ///                                                          ///
 ///  https://github.com/Highpoint2000/URDSupload             ///
 ///                                                          ///
@@ -10,15 +10,10 @@
 
 ///  This plugin only works from web server version 1.2.8.1!!!
 
-const plugin_version = '1.0a';
 const path = require('path');
 const fs = require('fs');
 const zlib = require('zlib');
 const { logInfo, logError, logWarn } = require('./../../server/console');
-
-function sanitizeInput(input) {
-    return encodeURIComponent(input); // Encodes critical characters for safe usage
-}
 
 // Define the path to the configuration file
 const configFilePath = path.join(__dirname, './../../plugins_configs/urds-upload.json');
@@ -26,6 +21,7 @@ const configFilePath = path.join(__dirname, './../../plugins_configs/urds-upload
 // Default values for the configuration file
 const defaultConfig = {
 	URDSautoUpload: 'on', 			// Set Auto Upload after 0:00 UTC 'on' or 'off'
+	CombineFiles: 'off',			// Combine all files before uploading / set it 'on' or 'off'/ default is 'off'
     FMLIST_OM_ID: '',               // Enter your OM ID here, for example: FMLIST_OM_ID: '1234', if no OMID is entered under FMLIST INTEGRATION on the web server
     FMLIST_EMAIL: '',               // Enter your EMAIL here, for example: FMLIST_EMAIL: 'xxx@xxx.com', if no email is entered under IDENTIFICATION & MAP on the web server or it is another email adress
 	ServerName: '', 				// Enter your RaspiID or another name for the server, if left blank the name will be taken from the web server
@@ -73,6 +69,7 @@ function loadConfig(filePath) {
 const configPlugin = loadConfig(configFilePath);
 
   let URDSautoUpload = configPlugin.URDSautoUpload;
+  let CombineFiles = configPlugin.CombineFiles;
   let FMLIST_OM_ID = configPlugin.FMLIST_OM_ID;
   let FMLIST_EMAIL = configPlugin.FMLIST_EMAIL;
   let ServerName = configPlugin.ServerName; 
@@ -91,12 +88,38 @@ const clientID = 'Server';
 const webserverPort = config.webserver.webserverPort || 8080;
 const externalWsUrl = `ws://127.0.0.1:${webserverPort}`;
 let source;
+let header;
 let MessageLog;
 let MessageWarn;
 let MessageError;
-
-
 let currentStatus = 'off';
+
+const sentMessages = new Set();
+const { execSync } = require('child_process');
+const NewModules = ['axios', 'form-data', 'os'];
+
+function checkAndInstallNewModules() {
+    NewModules.forEach(module => {
+        const modulePath = path.join(__dirname, './../../node_modules', module);
+        if (!fs.existsSync(modulePath)) {
+            logInfo(`Module ${module} is missing. Installing...`);
+            try {
+                execSync(`npm install ${module}`, { stdio: 'inherit' });
+                logInfo(`Module ${module} installed successfully.`);
+            } catch (error) {
+                logError(`Error installing module ${module}:`, error);
+                process.exit(1);
+            }
+        }
+    });
+}
+
+checkAndInstallNewModules();
+
+const axios = require('axios'); 
+const FormData = require('form-data');
+const os = require('os');
+
 if (URDSautoUpload === 'on') {
     currentStatus = 'on';
 }
@@ -128,49 +151,46 @@ if (ValidEmailAddressTo === '' && URDSautoUpload === 'on') {
 }
 
 if (!ServerName) {
-	ServerName = sanitizeInput(config.identification.tunerName).replace(/%20/g, ' ');
+    ServerName = encodeURIComponent(config.identification.tunerName)
+        .replace(/%20/g, ' '); // Encode and replace spaces with a space character
 }
 
 if (!ServerDescription) {
-	ServerDescription = config.identification.tunerDesc; 
+	ServerDescription = encodeURIComponent(config.identification.tunerDesc)
+		.replace(/%20/g, ' '); // Encode and replace spaces with a space character
 }
 
-const sentMessages = new Set();
-const { execSync } = require('child_process');
-const NewModules = ['axios', 'form-data', 'os'];
+// Read the plugin version from the client file
+let UploaderPluginVersion
+const UploaderfilePath = path.join(__dirname, 'urds-upload.js');
+fs.readFile(UploaderfilePath, 'utf8', (err, data) => {
+    if (err) {
+        console.error('URDS Upload Fehler beim Lesen der Datei:', err);
+        return;
+    }
+    const versionMatch = data.match(/const\s+plugin_version\s*=\s*['"]([^'"]+)['"]/);
+    if (versionMatch && versionMatch[1]) {
+        UploaderPluginVersion = versionMatch[1];
+    } else {
+        LogError('URDS Upload Error! Plugin version nicht gefunden.');
+    }
+});
 
-function checkAndInstallNewModules() {
-    NewModules.forEach(module => {
-        const modulePath = path.join(__dirname, './../../node_modules', module);
-        if (!fs.existsSync(modulePath)) {
-            logInfo(`Module ${module} is missing. Installing...`);
-            try {
-                execSync(`npm install ${module}`, { stdio: 'inherit' });
-                logInfo(`Module ${module} installed successfully.`);
-            } catch (error) {
-                logError(`Error installing module ${module}:`, error);
-                process.exit(1);
-            }
-        }
-    });
-}
-
-checkAndInstallNewModules();
-
-const axios = require('axios'); 
-const FormData = require('form-data');
-const os = require('os');
-
-let header = `10,"${FMLIST_EMAIL}"\n`;
-const singleLineServerName = ServerName.replace(/\n/g, ' '); // Remove line breaks from ServerName
-header += `11,"${FMLIST_OM_ID}","${singleLineServerName}"\n`;
-header += `111,"os-release ${os.platform()} ${os.release()}"\n`;
-header += `112,"architecture ${os.arch()}"\n`;
-header += `113,"plugin-version ${plugin_version}"\n`;
-const singleLineDescription = ServerDescription.replace(/\n/g, ' '); // Remove line breaks from ServerDescription
-header += `12,"${singleLineDescription}"\n`;
-header += `13,"${PublicationMode}",""\n`;
-header += `14,"${OperatingMode}"\n`;
+// Read the plugin version from the client file
+let ScannerPluginVersion
+const ScannerfilePath = path.join(__dirname, '..', 'Scanner', 'scanner.js');
+fs.readFile(ScannerfilePath, 'utf8', (err, data) => {
+    if (err) {
+        console.error('URDS Upload Fehler beim Lesen der Scanner Datei:', err);
+        return;
+    }
+    const versionMatch = data.match(/const\s+plugin_version\s*=\s*['"]([^'"]+)['"]/);
+    if (versionMatch && versionMatch[1]) {
+        ScannerPluginVersion = versionMatch[1];
+    } else {
+        LogError('URDS Upload Error! Scanner plugin version nicht gefunden.');
+    }
+});
 
 // Directory paths
 const logDir = path.join(__dirname, '../../web/logs');
@@ -346,6 +366,40 @@ function countPicodesAndPSInfo(fileContent) {
   return { picodeCount, psInfoCount, distinctPicodeCount };
 }
 
+async function processFilesWithCombination(logDir, uploadDir, ws, source) {
+    const timestamp = new Date().toISOString().replace(/:/g, '').replace(/\..+/, '');
+    const combinedFilePath = path.join(logDir, `${timestamp}_combined_fm_rds.csv`);
+    const combinedFileContent = [];
+
+    const filesToCombine = fs.readdirSync(logDir)
+      .filter(file => file.endsWith('_fm_rds.csv') && !file.startsWith('SCANNER') && !file.startsWith('scan'))
+      .map(file => ({
+        file,
+        time: fs.statSync(path.join(logDir, file)).mtime.getTime()
+      }))
+      .sort((a, b) => a.time - b.time);
+
+    if (filesToCombine.length > 0) {
+      filesToCombine.forEach(({ file }) => {
+        const filePath = path.join(logDir, file);
+        const fileContent = fs.readFileSync(filePath, 'utf-8');
+        const sanitizedContent = fileContent.split('\n').filter(line => line.trim() !== '').join('\n');
+        combinedFileContent.push(sanitizedContent);
+
+        // Rename original file to .backup
+        const backupFilePath = filePath + '.backup';
+        fs.renameSync(filePath, backupFilePath);
+        logInfo(`URDS Upload renamed file ${file} to ${file}.backup`);
+      });
+
+      fs.writeFileSync(combinedFilePath, combinedFileContent.join('\n'), 'utf-8');
+      logInfo(`URDS Upload combined ${filesToCombine.length} files into ${timestamp}_combined_fm_rds.csv`);
+
+    } else {
+      logInfo('URDS Upload found no files to combine in logDir.');
+    }
+}
+
 function copyCsvFilesWithHeader(ws, source) {
   // Ensure the destination directories exist
   if (!fs.existsSync(uploadDir)) {
@@ -356,7 +410,11 @@ function copyCsvFilesWithHeader(ws, source) {
     fs.mkdirSync(sentDir, { recursive: true });
     logInfo(`URDS Upload created Directory ${sentDir}`);
   }
-
+  
+  if (CombineFiles === 'on') {
+	processFilesWithCombination(logDir, uploadDir, ws, source);
+  }
+  
   const filesToUpload = new Set(); // Track files to be uploaded
   const pendingGzCreations = new Set(); // Track ongoing .gz creations
 
@@ -384,7 +442,23 @@ function copyCsvFilesWithHeader(ws, source) {
   }, 500); // Check every 500ms
 }
 
-function processFile(file, baseDir, filesToUpload, pendingGzCreations) {
+async function setHeader() {
+  return new Promise((resolve) => {
+    header = `10,"${FMLIST_EMAIL}"\n`;
+    const singleLineServerName = ServerName.replace(/\n/g, ' '); // Remove line breaks from ServerName
+    header += `11,"${FMLIST_OM_ID}","${singleLineServerName}"\n`;
+    header += `111,"os-release ${os.platform()} ${os.release()}"\n`;
+    header += `112,"architecture ${os.arch()}"\n`;
+    header += `113,"UploaderPluginVersion ${UploaderPluginVersion}", "ScannerPluginVersion ${ScannerPluginVersion}"\n`;
+    const singleLineDescription = ServerDescription.replace(/\n/g, ' '); // Remove line breaks from ServerDescription
+    header += `12,"${singleLineDescription}"\n`;
+    header += `13,"${PublicationMode}",""\n`;
+    header += `14,"${OperatingMode}"`;
+    resolve(header);
+  });
+}
+
+async function processFile(file, baseDir, filesToUpload, pendingGzCreations) {
   const filePath = path.join(baseDir, file);
   const uploadFilePath = path.join(uploadDir, file);
   const gzFileName = file.replace('_fm_rds.csv', '_upload.csv.gz');
@@ -408,7 +482,8 @@ function processFile(file, baseDir, filesToUpload, pendingGzCreations) {
       const fileContent = fs.readFileSync(filePath, 'utf-8');
       const { picodeCount, psInfoCount, distinctPicodeCount } = countPicodesAndPSInfo(fileContent);
 
-      const newHeader = header + '15, ' + picodeCount + ', ' + psInfoCount + ', ' + distinctPicodeCount;
+      const header = await setHeader(); // Wait for the header to be ready
+      const newHeader = header + '\n15, ' + picodeCount + ', ' + psInfoCount + ', ' + distinctPicodeCount;
       const newContent = newHeader + '\n' + fileContent;
 
       fs.writeFileSync(uploadFilePath, newContent);
@@ -559,6 +634,10 @@ function handleWebSocketMessage(data, ws) {
     } catch (error) {
         logError('URDS Upload Error processing WebSocket message:', error);
     }
+}
+
+if (CombineFiles === 'on') {
+    logInfo(`URDS Upload combine all files`);
 }
 
 // Handle DX-Alert specific WebSocket messages
