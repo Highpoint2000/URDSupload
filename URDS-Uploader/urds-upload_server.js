@@ -156,7 +156,7 @@ if (!ServerName) {
 }
 
 if (!ServerDescription) {
-	ServerDescription = encodeURIComponent(config.identification.tunerDesc)
+	ServerDescription = config.identification.tunerDesc
 		.replace(/%20/g, ' '); // Encode and replace spaces with a space character
 }
 
