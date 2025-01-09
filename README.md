@@ -4,12 +4,9 @@ This plugin provides automaticly and manual upload functions for the scanner plu
 
 ![image](https://github.com/user-attachments/assets/d52b2e22-59d6-4b64-81c6-449300ef0f36)
 
+## v1.0c (only use with Scanner Plugin from Version 3.0 BETA 11!)
 
-## v1.0b (only use with Scanner Plugin from Version 3.0 BETA 11!)
-
-- URDS upload button is now visible on mobile devices
-- Added option to merge files before uploading
-- Plugin versions used are written to the log
+- backups are now saved in a separate directory
 
 ## Installation notes:
 
@@ -41,10 +38,16 @@ The following variables can be changed in the urds-upload.json:
 
 - To start the upload manually, press the URDS upload button. A short time later a toast message appears indicating whether the upload worked
 - To enable/disable automatic upload, long press the URDS upload button. The automatic upload starts at 0:00 UTC with a random delay time (max. 120 minutes)
-- The CSV log files originally created by the scanner plugin are saved as .backup under /web/logs, all uploaded files are saved under /web/logs/sent after the upload
+- The CSV log files originally created by the scanner plugin are saved under /web/logs/backup, all uploaded files are saved under /web/logs/sent after the upload
 - Processing on the FMLIST server takes different amounts of time and only takes place if the OMID and email address match the FMLIST account details 
   
 ## History: 
+
+### v1.0b (only use with Scanner Plugin from Version 3.0 BETA 11!)
+
+- URDS upload button is now visible on mobile devices
+- Added option to merge files before uploading
+- Plugin versions used are written to the log
 
 ### v1.0a (only use with Scanner Plugin from Version 3.0 BETA 11!)
 
