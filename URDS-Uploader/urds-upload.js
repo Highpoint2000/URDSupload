@@ -1,21 +1,19 @@
 (() => {
 ////////////////////////////////////////////////////////////////
 ///                                                          ///
-///  URDS UPLOADER CLIENT SCRIPT FOR FM-DX-WEBSERVER (V1.0b) ///
+///  URDS UPLOADER CLIENT SCRIPT FOR FM-DX-WEBSERVER (V1.0c) ///
 ///                                                          ///
-///  by Highpoint                last update: 06.01.25       ///
+///  by Highpoint                last update: 09.01.25       ///
 ///                                                          ///
 ///  https://github.com/Highpoint2000/URDSupload             ///
 ///                                                          ///
 ////////////////////////////////////////////////////////////////
 
-///  This plugin only works from web server version 1.2.8.1!!!
-
 const updateInfo = true; // Enable or disable version check
 
 /////////////////////////////////////////////////////////////////
 
-    const plugin_version = '1.0b';
+    const plugin_version = '1.0c';
 	const plugin_path = 'https://raw.githubusercontent.com/highpoint2000/URDSupload/';
 	const plugin_JSfile = 'main/URDS-Uploader/urds-upload.js'
 	const plugin_name = 'URDS Uploader';
@@ -159,7 +157,7 @@ const updateInfo = true; // Enable or disable version check
     function handleWebSocketMessage(event) {
         try {
             const eventData = JSON.parse(event.data);
-			console.log(eventData); 
+			//console.log(eventData); 
             if (eventData.type === 'URDSupload' && eventData.source !== sessionId) {
                 let { status } = eventData.value;
                 switch (status) {
