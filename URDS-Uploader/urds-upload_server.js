@@ -1,8 +1,8 @@
 ////////////////////////////////////////////////////////////////
 ///                                                          ///
-///  URDS UPLOADER SERVER SCRIPT FOR FM-DX-WEBSERVER (V1.0b) ///
+///  URDS UPLOADER SERVER SCRIPT FOR FM-DX-WEBSERVER (V1.0c) ///
 ///                                                          ///
-///  by Highpoint                last update: 06.01.25       ///
+///  by Highpoint                last update: 09.01.25       ///
 ///                                                          ///
 ///  https://github.com/Highpoint2000/URDSupload             ///
 ///                                                          ///
@@ -209,6 +209,40 @@ function checkAndCreateDir(directory) {
 checkAndCreateDir(uploadDir);
 checkAndCreateDir(sentDir);
 
+function createBackupFolderAndMoveFiles() {
+    // Path for the backup folder
+    const backupDir = path.join(logDir, 'backup');
+
+    // Ensure the backup folder exists
+    if (!fs.existsSync(backupDir)) {
+        fs.mkdirSync(backupDir, { recursive: true });
+        logInfo(`URDS Upload created Backup folder`);
+    }
+
+    // Read files in the logDir folder
+    const files = fs.readdirSync(logDir);
+    let filesMoved = false;
+
+    files.forEach(file => {
+        const filePath = path.join(logDir, file);
+
+        // Check if it is a file with the .backup extension
+        if (fs.lstatSync(filePath).isFile() && file.endsWith('.backup')) {
+            const targetPath = path.join(backupDir, file.replace('.backup', ''));
+
+            // Move and rename the file
+            fs.renameSync(filePath, targetPath);
+            filesMoved = true;
+        }
+    });
+
+    if (filesMoved) {
+        logInfo(`URDS Upload have moved all *.backup files and removed their .backup extension`);
+    }
+}
+
+createBackupFolderAndMoveFiles();
+
 // Function to create an overview of the file
 const createFMOverview = (filePath) => {
     const fullPath = path.resolve(filePath);
@@ -371,6 +405,14 @@ async function processFilesWithCombination(logDir, uploadDir, ws, source) {
     const combinedFilePath = path.join(logDir, `${timestamp}_combined_fm_rds.csv`);
     const combinedFileContent = [];
 
+    const backupDir = path.join(logDir, 'backup');
+
+    // Ensure the backup folder exists
+    if (!fs.existsSync(backupDir)) {
+        fs.mkdirSync(backupDir, { recursive: true });
+        logInfo(`URDS Upload created Backup folder`);
+    }
+
     const filesToCombine = fs.readdirSync(logDir)
       .filter(file => file.endsWith('_fm_rds.csv') && !file.startsWith('SCANNER') && !file.startsWith('scan'))
       .map(file => ({
@@ -379,17 +421,17 @@ async function processFilesWithCombination(logDir, uploadDir, ws, source) {
       }))
       .sort((a, b) => a.time - b.time);
 
-    if (filesToCombine.length > 0) {
+    if (filesToCombine.length > 1) {
       filesToCombine.forEach(({ file }) => {
         const filePath = path.join(logDir, file);
         const fileContent = fs.readFileSync(filePath, 'utf-8');
         const sanitizedContent = fileContent.split('\n').filter(line => line.trim() !== '').join('\n');
         combinedFileContent.push(sanitizedContent);
 
-        // Rename original file to .backup
-        const backupFilePath = filePath + '.backup';
-        fs.renameSync(filePath, backupFilePath);
-        logInfo(`URDS Upload renamed file ${file} to ${file}.backup`);
+        // Move file to backup folder
+        const BackupPath = path.join(backupDir, `${file}`);
+        fs.renameSync(filePath, BackupPath);
+        logInfo(`URDS Upload moved file ${file} to backup folder`);
       });
 
       fs.writeFileSync(combinedFilePath, combinedFileContent.join('\n'), 'utf-8');
@@ -464,9 +506,16 @@ async function processFile(file, baseDir, filesToUpload, pendingGzCreations) {
   const gzFileName = file.replace('_fm_rds.csv', '_upload.csv.gz');
   const gzFilePath = path.join(uploadDir, gzFileName);
 
+  const backupDir = path.join(baseDir, 'backup');
+
+  // Ensure the backup folder exists
+  if (!fs.existsSync(backupDir)) {
+      fs.mkdirSync(backupDir, { recursive: true });
+      logInfo(`URDS Upload created Backup folder`);
+  }
+
   // Check if file name ends with '_fm_rds.csv' and ignore 'SCANNER*.csv'
   if (!file.endsWith('_fm_rds.csv') || file.startsWith('SCANNER') || file.startsWith('scan')) {
-    //logInfo(`Ignoring file ${file} as it does not match the criteria.`);
     return;
   }
 
@@ -488,9 +537,10 @@ async function processFile(file, baseDir, filesToUpload, pendingGzCreations) {
 
       fs.writeFileSync(uploadFilePath, newContent);
 
-      const backupFilePath = filePath + '.backup';
-      fs.renameSync(filePath, backupFilePath);
-      logInfo(`URDS Upload backed up CSV file ${file}`);
+      // Move file to backup folder
+      const BackupPath = path.join(backupDir, `${file}`);
+      fs.renameSync(filePath, BackupPath);
+      logInfo(`URDS Upload moved file ${file}.backup to backup folder`);
     }
 
     if (!fs.existsSync(gzFilePath)) {
@@ -637,7 +687,7 @@ function handleWebSocketMessage(data, ws) {
 }
 
 if (CombineFiles === 'on') {
-    logInfo(`URDS Upload combine all files`);
+    logInfo(`URDS Upload "combine all files function" is on`);
 }
 
 // Handle DX-Alert specific WebSocket messages
