@@ -3,7 +3,7 @@
 ///                                                          ///
 ///  URDS UPLOADER CLIENT SCRIPT FOR FM-DX-WEBSERVER (V1.0c) ///
 ///                                                          ///
-///  by Highpoint                last update: 09.01.25       ///
+///  by Highpoint                last update: 10.01.25       ///
 ///                                                          ///
 ///  https://github.com/Highpoint2000/URDSupload             ///
 ///                                                          ///
