@@ -2,7 +2,7 @@
 ///                                                          ///
 ///  URDS UPLOADER SERVER SCRIPT FOR FM-DX-WEBSERVER (V1.0c) ///
 ///                                                          ///
-///  by Highpoint                last update: 09.01.25       ///
+///  by Highpoint                last update: 10.01.25       ///
 ///                                                          ///
 ///  https://github.com/Highpoint2000/URDSupload             ///
 ///                                                          ///
@@ -349,9 +349,9 @@ const uploadAllFiles = async (ws,source) => {
 function countPicodesAndPSInfo(fileContent) {
   const lines = fileContent.split('\n');
   const freqData = {}; // Object to store frequency data
-  
+
   // Iterate through all lines of the input text
-  lines.forEach(line => {
+  lines.forEach((line, index) => {
     const columns = line.split(',');
 
     // Ensure there are enough columns
@@ -360,27 +360,31 @@ function countPicodesAndPSInfo(fileContent) {
       const picode = columns[13].trim(); // 14th column (Index 13) for Picodes
       const psInfo = columns[15].trim(); // 16th column (Index 15) for PS Info
 
+      // Debugging: Print extracted data
+      console.log(`Line ${index + 1}: Freq=${freq}, Picode=${picode}, PS Info=${psInfo}`);
+
       // Initialize if the frequency doesn't exist in the object
       if (!freqData[freq]) {
         freqData[freq] = {
           picodes: new Set(), // Set for unique Picodes
-          psInfo: new Set(),  // Set for unique PS Infos
-          picodesWithoutPSInfo: new Set() // Set for Picodes without PS Info
+          validPsInfo: false, // Track if a valid PS Info exists
+          distinctPicode: false, // Track if picode RAW exists
         };
       }
 
-      // Add Picodes and PS Infos to the corresponding frequency
+      // Add Picodes to the set if valid
       if (picode && !picode.includes('?')) {
-        freqData[freq].picodes.add(picode); // Add Picodes to the set
+        freqData[freq].picodes.add(picode);
       }
 
-      if (psInfo && !psInfo.includes('?')) {
-        freqData[freq].psInfo.add(psInfo); // Add PS Infos to the set
+      // Check for valid PS Info
+      if (picode && !picode.includes('?') && psInfo.trim().replace(/["']/g, '') !== '?' && !psInfo.includes('?')) {
+        freqData[freq].validPsInfo = true;
       }
 
-      // If there is no valid PS Info for this Picode, add it to the set
-      if (picode && !psInfo.includes('?') && !freqData[freq].psInfo.has(psInfo)) {
-        freqData[freq].picodesWithoutPSInfo.add(picode); // Add Picodes without PS Info
+      // Check for distinct Picodes
+      if (picode && !picode.includes('?') && psInfo.trim().replace(/["']/g, '') === '?') {
+        freqData[freq].distinctPicode = true;
       }
     }
   });
@@ -389,16 +393,28 @@ function countPicodesAndPSInfo(fileContent) {
   let picodeCount = 0;
   let psInfoCount = 0;
   let distinctPicodeCount = 0;
-  
-  // Count Picodes, PS Infos, and Picodes without PS Info across all frequencies
+
+  // Iterate over frequencies to calculate totals
   for (const freq in freqData) {
-    picodeCount += freqData[freq].picodes.size; // Count unique Picodes per frequency
-    psInfoCount += freqData[freq].psInfo.size; // Count unique PS Infos per frequency
-    distinctPicodeCount += freqData[freq].picodesWithoutPSInfo.size; // Count Picodes without PS Info
+    if (freqData[freq].picodes.size > 0) {
+      picodeCount += 1; // Each frequency with at least one valid Picode
+    }
+
+    if (freqData[freq].validPsInfo) {
+      psInfoCount += 1; // Count frequencies with at least one valid PS Info
+    } else if (freqData[freq].distinctPicode) {
+      distinctPicodeCount += 1; // Count frequencies with invalid PS Info
+    }
   }
 
+  // console.log("Total Picodes:", picodeCount);
+  // console.log("Total Valid PS Infos:", psInfoCount);
+  // console.log("Frequencies with Invalid PS Info:", distinctPicodeCount);
+
+  // Return all computed values
   return { picodeCount, psInfoCount, distinctPicodeCount };
 }
+
 
 async function processFilesWithCombination(logDir, uploadDir, ws, source) {
     const timestamp = new Date().toISOString().replace(/:/g, '').replace(/\..+/, '');
