@@ -1,8 +1,8 @@
 ////////////////////////////////////////////////////////////////
 ///                                                          ///
-///  URDS UPLOADER SERVER SCRIPT FOR FM-DX-WEBSERVER (V1.0c) ///
+///  URDS UPLOADER SERVER SCRIPT FOR FM-DX-WEBSERVER (V1.0d) ///
 ///                                                          ///
-///  by Highpoint                last update: 10.01.25       ///
+///  by Highpoint                last update: 11.01.25       ///
 ///                                                          ///
 ///  https://github.com/Highpoint2000/URDSupload             ///
 ///                                                          ///
@@ -355,13 +355,10 @@ function countPicodesAndPSInfo(fileContent) {
     const columns = line.split(',');
 
     // Ensure there are enough columns
-    if (columns.length > 15) {
-      const freq = columns[3].trim(); // 4th column (Index 3) for Frequency
-      const picode = columns[13].trim(); // 14th column (Index 13) for Picodes
-      const psInfo = columns[15].trim(); // 16th column (Index 15) for PS Info
-
-      // Debugging: Print extracted data
-      console.log(`Line ${index + 1}: Freq=${freq}, Picode=${picode}, PS Info=${psInfo}`);
+    if (columns.length > 14) {
+      const freq = columns[2].trim(); // 4th column (Index 3) for Frequency
+      const picode = columns[12].trim(); // 14th column (Index 13) for Picodes
+      const psInfo = columns[14].trim(); // 16th column (Index 15) for PS Info
 
       // Initialize if the frequency doesn't exist in the object
       if (!freqData[freq]) {
@@ -415,7 +412,6 @@ function countPicodesAndPSInfo(fileContent) {
   return { picodeCount, psInfoCount, distinctPicodeCount };
 }
 
-
 async function processFilesWithCombination(logDir, uploadDir, ws, source) {
     const timestamp = new Date().toISOString().replace(/:/g, '').replace(/\..+/, '');
     const combinedFilePath = path.join(logDir, `${timestamp}_combined_fm_rds.csv`);
@@ -423,38 +419,57 @@ async function processFilesWithCombination(logDir, uploadDir, ws, source) {
 
     const backupDir = path.join(logDir, 'backup');
 
-    // Ensure the backup folder exists
+    // Sicherstellen, dass der Backup-Ordner existiert
     if (!fs.existsSync(backupDir)) {
         fs.mkdirSync(backupDir, { recursive: true });
         logInfo(`URDS Upload created Backup folder`);
     }
 
+    // Alle relevanten Dateien im Ordner filtern
     const filesToCombine = fs.readdirSync(logDir)
       .filter(file => file.endsWith('_fm_rds.csv') && !file.startsWith('SCANNER') && !file.startsWith('scan'))
-      .map(file => ({
-        file,
-        time: fs.statSync(path.join(logDir, file)).mtime.getTime()
-      }))
+      .map(file => {
+        const filePath = path.join(logDir, file);
+        const fileSize = fs.statSync(filePath).size;
+
+        // 0-KB-Dateien prüfen und löschen
+        if (fileSize === 0) {
+            try {
+                fs.unlinkSync(filePath);
+                logInfo(`URDS Upload deleted empty CSV file ${file}`);
+            } catch (error) {
+                logError(`URDS Upload Error deleting file ${file}: ${error.message}`);
+            }
+            return null; // Datei nicht zur Verarbeitung hinzufügen
+        }
+
+        return {
+          file,
+          time: fs.statSync(filePath).mtime.getTime()
+        };
+      })
+      .filter(Boolean) // Null-Werte entfernen
       .sort((a, b) => a.time - b.time);
 
+    // Wenn mehr als eine Datei gefunden wird, kombinieren
     if (filesToCombine.length > 1) {
-      filesToCombine.forEach(({ file }) => {
-        const filePath = path.join(logDir, file);
-        const fileContent = fs.readFileSync(filePath, 'utf-8');
-        const sanitizedContent = fileContent.split('\n').filter(line => line.trim() !== '').join('\n');
-        combinedFileContent.push(sanitizedContent);
+        filesToCombine.forEach(({ file }) => {
+            const filePath = path.join(logDir, file);
+            const fileContent = fs.readFileSync(filePath, 'utf-8');
+            const sanitizedContent = fileContent.split('\n').filter(line => line.trim() !== '').join('\n');
+            combinedFileContent.push(sanitizedContent);
 
-        // Move file to backup folder
-        const BackupPath = path.join(backupDir, `${file}`);
-        fs.renameSync(filePath, BackupPath);
-        logInfo(`URDS Upload moved file ${file} to backup folder`);
-      });
+            // Datei in den Backup-Ordner verschieben
+            const backupPath = path.join(backupDir, `${file}`);
+            fs.renameSync(filePath, backupPath);
+            logInfo(`URDS Upload moved file ${file} to backup folder`);
+        });
 
-      fs.writeFileSync(combinedFilePath, combinedFileContent.join('\n'), 'utf-8');
-      logInfo(`URDS Upload combined ${filesToCombine.length} files into ${timestamp}_combined_fm_rds.csv`);
-
+        // Kombinierte Datei schreiben
+        fs.writeFileSync(combinedFilePath, combinedFileContent.join('\n'), 'utf-8');
+        logInfo(`URDS Upload combined ${filesToCombine.length} files into ${timestamp}_combined_fm_rds.csv`);
     } else {
-      logInfo('URDS Upload found no files to combine in logDir.');
+        logInfo('URDS Upload found no files to combine in logDir.');
     }
 }
 
@@ -526,8 +541,8 @@ async function processFile(file, baseDir, filesToUpload, pendingGzCreations) {
 
   // Ensure the backup folder exists
   if (!fs.existsSync(backupDir)) {
-      fs.mkdirSync(backupDir, { recursive: true });
-      logInfo(`URDS Upload created Backup folder`);
+    fs.mkdirSync(backupDir, { recursive: true });
+    logInfo(`URDS Upload created Backup folder`);
   }
 
   // Check if file name ends with '_fm_rds.csv' and ignore 'SCANNER*.csv'
@@ -537,10 +552,15 @@ async function processFile(file, baseDir, filesToUpload, pendingGzCreations) {
 
   const fileStat = fs.statSync(filePath);
   if (fileStat.isFile()) {
+    // Handle 0 KB files
     if (fileStat.size === 0) {
-      fs.unlinkSync(filePath);
-      logInfo(`URDS Upload deleted empty CSV file ${file}`);
-      return;
+      try {
+        fs.unlinkSync(filePath);
+        logInfo(`URDS Upload deleted empty CSV file ${file}`);
+      } catch (error) {
+        logError(`URDS Upload Error deleting file ${file}: ${error.message}`);
+      }
+      return; // Exit early after deletion
     }
 
     if (!fs.existsSync(uploadFilePath)) {
@@ -549,7 +569,22 @@ async function processFile(file, baseDir, filesToUpload, pendingGzCreations) {
 
       const header = await setHeader(); // Wait for the header to be ready
       const newHeader = header + '\n15, ' + picodeCount + ', ' + psInfoCount + ', ' + distinctPicodeCount;
-      const newContent = newHeader + '\n' + fileContent;
+
+      // Start building the new content with the header
+      let newContent = newHeader + '\n';
+
+      // Process each line and ensure it starts with "30,"
+      const lines = fileContent.split('\n');
+      lines.forEach(line => {
+        const trimmedLine = line.trim();
+        if (trimmedLine) { // Skip empty lines
+          if (!trimmedLine.startsWith("30,")) {
+            newContent += "30," + trimmedLine + '\n';
+          } else {
+            newContent += trimmedLine + '\n';
+          }
+        }
+      });
 
       fs.writeFileSync(uploadFilePath, newContent);
 
@@ -566,6 +601,8 @@ async function processFile(file, baseDir, filesToUpload, pendingGzCreations) {
     }
   }
 }
+
+
 
 // Helper function to process files in uploadDir
 function processUploadDirFile(file, filesToUpload, pendingGzCreations, ws, source) {
