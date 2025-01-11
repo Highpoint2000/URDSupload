@@ -4,9 +4,9 @@ This plugin provides automaticly and manual upload functions for the scanner plu
 
 ![image](https://github.com/user-attachments/assets/d52b2e22-59d6-4b64-81c6-449300ef0f36)
 
-## v1.0c (only use with Scanner Plugin from Version 3.0 BETA 11!)
+### v1.0d (only use with Scanner Plugin from Version 3.0!)
 
-- backups are now saved in a separate directory
+- Column 30 is now added during upload
 
 ## Installation notes:
 
@@ -42,6 +42,10 @@ The following variables can be changed in the urds-upload.json:
 - Processing on the FMLIST server takes different amounts of time and only takes place if the OMID and email address match the FMLIST account details 
   
 ## History: 
+
+### v1.0d (only use with Scanner Plugin from Version 3.0 BETA 11!)
+
+- backups are now saved in a separate directory
 
 ### v1.0b (only use with Scanner Plugin from Version 3.0 BETA 11!)
 
