@@ -1,9 +1,9 @@
 (() => {
 ////////////////////////////////////////////////////////////////
 ///                                                          ///
-///  URDS UPLOADER CLIENT SCRIPT FOR FM-DX-WEBSERVER (V1.0c) ///
+///  URDS UPLOADER CLIENT SCRIPT FOR FM-DX-WEBSERVER (V1.0d) ///
 ///                                                          ///
-///  by Highpoint                last update: 10.01.25       ///
+///  by Highpoint                last update: 11.01.25       ///
 ///                                                          ///
 ///  https://github.com/Highpoint2000/URDSupload             ///
 ///                                                          ///
@@ -13,7 +13,7 @@ const updateInfo = true; // Enable or disable version check
 
 /////////////////////////////////////////////////////////////////
 
-    const plugin_version = '1.0c';
+    const plugin_version = '1.0d';
 	const plugin_path = 'https://raw.githubusercontent.com/highpoint2000/URDSupload/';
 	const plugin_JSfile = 'main/URDS-Uploader/urds-upload.js'
 	const plugin_name = 'URDS Uploader';
