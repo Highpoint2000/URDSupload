@@ -1,8 +1,8 @@
 ////////////////////////////////////////////////////////////////
 ///                                                          ///
-///  URDS UPLOADER SERVER SCRIPT FOR FM-DX-WEBSERVER (V1.0d) ///
+///  URDS UPLOADER SERVER SCRIPT FOR FM-DX-WEBSERVER (V1.0e) ///
 ///                                                          ///
-///  by Highpoint                last update: 11.01.25       ///
+///  by Highpoint                last update: 14.01.25       ///
 ///                                                          ///
 ///  https://github.com/Highpoint2000/URDSupload             ///
 ///                                                          ///
@@ -432,7 +432,7 @@ async function processFilesWithCombination(logDir, uploadDir, ws, source) {
         const filePath = path.join(logDir, file);
         const fileSize = fs.statSync(filePath).size;
 
-        // 0-KB-Dateien prüfen und löschen
+        // 0-KB-Dateien prÃ¼fen und lÃ¶schen
         if (fileSize === 0) {
             try {
                 fs.unlinkSync(filePath);
@@ -440,7 +440,7 @@ async function processFilesWithCombination(logDir, uploadDir, ws, source) {
             } catch (error) {
                 logError(`URDS Upload Error deleting file ${file}: ${error.message}`);
             }
-            return null; // Datei nicht zur Verarbeitung hinzufügen
+            return null; // Datei nicht zur Verarbeitung hinzufÃ¼gen
         }
 
         return {
@@ -588,11 +588,24 @@ async function processFile(file, baseDir, filesToUpload, pendingGzCreations) {
 
       fs.writeFileSync(uploadFilePath, newContent);
 
-      // Move file to backup folder
-      const BackupPath = path.join(backupDir, `${file}`);
-      fs.renameSync(filePath, BackupPath);
-      logInfo(`URDS Upload moved file ${file}.backup to backup folder`);
-    }
+// Move backup file to backup folder
+if (file.includes('_combined_fm_rds.csv')) {
+  const backupPath = path.join(backupDir, file);
+  if (!fs.existsSync(filePath)) {
+    //logInfo(`Source file ${filePath} does not exist, skipping move.`);
+    return;
+  }
+
+  try {
+    fs.renameSync(filePath, backupPath);
+    logInfo(`URDS Upload moved file ${file} to backup folder`);
+  } catch (error) {
+    logError(`Error moving file ${file} to backup folder: ${error.message}`);
+  }
+} else {
+  //logInfo(`File ${file} does not match the required pattern, skipping.`);
+}
+
 
     if (!fs.existsSync(gzFilePath)) {
       createGzFile(uploadFilePath, gzFilePath, filesToUpload, pendingGzCreations, gzFileName, ws, source);
@@ -601,7 +614,7 @@ async function processFile(file, baseDir, filesToUpload, pendingGzCreations) {
     }
   }
 }
-
+}
 
 
 // Helper function to process files in uploadDir
@@ -744,37 +757,46 @@ if (CombineFiles === 'on') {
 }
 
 // Handle DX-Alert specific WebSocket messages
+let lastStartTimestamp = 0;
+
 function handleURDSMessage(message, ws) {
     const { status } = message.value;
+    const now = Date.now();
 
     if (status === 'request') {
-		if (currentStatus === 'on') { 
-				ws.send(JSON.stringify(createMessage('on', message.source)));
-				logInfo(`URDS Upload responding with "Autoupload on"`);
-				currentStatus = 'on';
-		} else if (currentStatus === 'off') {
-					ws.send(JSON.stringify(createMessage('off', message.source)));
-					logInfo(`URDS Upload responding with "Autoupload off"`);
-					currentStatus = 'off';
-		}
-	} else if (status === 'on') { 
-				ws.send(JSON.stringify(createMessage('on', message.source)));
-				logInfo(`URDS Upload responding with "Autoupload on"`);
-				currentStatus = 'on';
-		} else if (status === 'off') {
-					ws.send(JSON.stringify(createMessage('off', message.source)));
-					logInfo(`URDS Upload responding with "Autoupload off"`);
-					currentStatus = 'off';
-			} else if (status === 'start') {
-				logInfo(`URDS Upload received "Start upload" from ${message.source}`);
-					source = message.source;
-					MessageLog = false; 
-					MessageWarn = false; 
-					MessageError = false;
-					MessageCode = 0;
-					copyCsvFilesWithHeader(ws,source);
-			}
+        if (currentStatus === 'on') {
+            ws.send(JSON.stringify(createMessage('on', message.source)));
+            logInfo(`URDS Upload responding with "Autoupload on"`);
+            currentStatus = 'on';
+        } else if (currentStatus === 'off') {
+            ws.send(JSON.stringify(createMessage('off', message.source)));
+            logInfo(`URDS Upload responding with "Autoupload off"`);
+            currentStatus = 'off';
+        }
+    } else if (status === 'on') {
+        ws.send(JSON.stringify(createMessage('on', message.source)));
+        logInfo(`URDS Upload responding with "Autoupload on"`);
+        currentStatus = 'on';
+    } else if (status === 'off') {
+        ws.send(JSON.stringify(createMessage('off', message.source)));
+        logInfo(`URDS Upload responding with "Autoupload off"`);
+        currentStatus = 'off';
+    } else if (status === 'start') {
+        if (now - lastStartTimestamp >= 5000) {
+            logInfo(`URDS Upload received "Start upload" from ${message.source}`);
+            lastStartTimestamp = now;
+            source = message.source;
+            MessageLog = false;
+            MessageWarn = false;
+            MessageError = false;
+            MessageCode = 0;
+            copyCsvFilesWithHeader(ws, source);
+        } else {
+            logInfo(`"Start upload" message from ${message.source} ignored due to throttle limit.`);
+        }
+    }
 }
+
 
 // Set up a separate connection for the /data_plugins WebSocket endpoint
 function setupdata_pluginsWebSocket() {
