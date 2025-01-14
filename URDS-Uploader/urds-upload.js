@@ -1,9 +1,9 @@
 (() => {
 ////////////////////////////////////////////////////////////////
 ///                                                          ///
-///  URDS UPLOADER CLIENT SCRIPT FOR FM-DX-WEBSERVER (V1.0d) ///
+///  URDS UPLOADER CLIENT SCRIPT FOR FM-DX-WEBSERVER (V1.0e) ///
 ///                                                          ///
-///  by Highpoint                last update: 11.01.25       ///
+///  by Highpoint                last update: 14.01.25       ///
 ///                                                          ///
 ///  https://github.com/Highpoint2000/URDSupload             ///
 ///                                                          ///
@@ -13,7 +13,7 @@ const updateInfo = true; // Enable or disable version check
 
 /////////////////////////////////////////////////////////////////
 
-    const plugin_version = '1.0d';
+    const plugin_version = '1.0e';
 	const plugin_path = 'https://raw.githubusercontent.com/highpoint2000/URDSupload/';
 	const plugin_JSfile = 'main/URDS-Uploader/urds-upload.js'
 	const plugin_name = 'URDS Uploader';
@@ -153,82 +153,88 @@ const updateInfo = true; // Enable or disable version check
         }
     }
 
-    // Function to handle WebSocket messages
-    function handleWebSocketMessage(event) {
-        try {
-            const eventData = JSON.parse(event.data);
-			//console.log(eventData); 
-            if (eventData.type === 'URDSupload' && eventData.source !== sessionId) {
+// Function to handle WebSocket messages
+function handleWebSocketMessage(event) {
+    try {
+        const eventData = JSON.parse(event.data);
+        //console.log(eventData);
+
+        // Throttle processing to one message every 1000ms
+        if (eventData.type === 'URDSupload' && eventData.source !== sessionId) {
+            const currentTime = Date.now();
+            if (!handleWebSocketMessage.lastProcessedTime || currentTime - handleWebSocketMessage.lastProcessedTime >= 1000) {
+                handleWebSocketMessage.lastProcessedTime = currentTime;
+
                 let { status } = eventData.value;
                 switch (status) {
                     case 'success':
                         if (eventData.target === sessionId) {
-							if (status === 'on' ) {
-								sendToast('success important', 'URDS Upload', `URDSupload activated!!!`, false, false);
-								console.log("Server response: URDS Upload activated!!!");	
-								
-							} else {
-								sendToast('error', 'URDS Upload', `no services are configured!`, false, false);	
-							}
-						}
+                            if (status === 'on') {
+                                sendToast('success important', 'URDS Upload', `URDSupload activated!!!`, false, false);
+                                console.log("Server response: URDS Upload activated!!!");
+                            } else {
+                                sendToast('error', 'URDS Upload', `no services are configured!`, false, false);
+                            }
+                        }
                         break;
-                    case 'ok':			
-							console.log(`URDS Upload started successfully`);
-							if (isTuneAuthenticated) {
-								sendToast('success important', 'URDS Upload', 'successfully!', false, false);
-							}
-                    break;
-					case 'warn':
-							console.warn("URDS Upload started with errors");
-							sendToast('warning', 'URDS Upload', 'Warning! Started with errors!', false, false);							
-                    break;
+                    case 'ok':
+                        console.log(`URDS Upload started successfully`);
+                        if (isTuneAuthenticated) {
+                            sendToast('success important', 'URDS Upload', 'successfully!', false, false);
+                        }
+                        break;
+                    case 'warn':
+                        console.warn("URDS Upload started with errors");
+                        sendToast('warning', 'URDS Upload', 'Warning! Started with errors!', false, false);
+                        break;
                     case 'error':
-							console.error("URDS Upload request failed.");
-							sendToast('error important', 'URDS Upload', 'Error! Failed to Upload!', false, false);							
-                    break;
-					case 'no':
-							console.warn("URDS Upload have no files to upload.");
-							sendToast('warning', 'URDS Upload', 'No files to upload!', false, false);							
-                    break;
-					case 'fail':
-							console.error("URDS Upload failed to create gzipped file.");
-							sendToast('error important', 'URDS Upload', 'Failed to create gzipped file!', false, false);							
-                    break;
+                        console.error("URDS Upload request failed.");
+                        sendToast('error important', 'URDS Upload', 'Error! Failed to Upload!', false, false);
+                        break;
+                    case 'no':
+                        console.warn("URDS Upload have no files to upload.");
+                        sendToast('warning', 'URDS Upload', 'No files to upload!', false, false);
+                        break;
+                    case 'fail':
+                        console.error("URDS Upload failed to create gzipped file.");
+                        sendToast('error important', 'URDS Upload', 'Failed to create gzipped file!', false, false);
+                        break;
                     case 'on':
                     case 'off':
-						
-						// Update button status based on the received status
+                        // Update button status based on the received status
                         if (URDSButton) {
                             URDSActive = status === 'on';
                             setButtonStatus(URDSActive); // Update button immediately
                         }
 
-						if (isTuneAuthenticated && (eventData.target === '000000000000' || eventData.target === sessionId)) {
-							const StatusMessage = `URDS Upload ${URDSActive ? 'activated' : 'deactivated'}`;
-							if (status === 'on') {
-								const DetailsMessage = URDSActive ? `URDS Upload activated` : '';
-								console.log(`${StatusMessage}${DetailsMessage}`);
-								sendToast('info', 'URDS Upload', `Plugin activated`, false, false);
-							} else {
-								const DetailsMessage = URDSActive ? `URDS Upload deactivated` : '';
-								console.log(`${StatusMessage}${DetailsMessage}`);
-								sendToast('info', 'URDS Upload', `Plugin deactivated`, false, false);
-							}
-						}	 
-						break;
+                        if (isTuneAuthenticated && (eventData.target === '000000000000' || eventData.target === sessionId)) {
+                            const StatusMessage = `URDS Upload ${URDSActive ? 'activated' : 'deactivated'}`;
+                            if (status === 'on') {
+                                const DetailsMessage = URDSActive ? `URDS Upload activated` : '';
+                                console.log(`${StatusMessage}${DetailsMessage}`);
+                                sendToast('info', 'URDS Upload', `Plugin activated`, false, false);
+                            } else {
+                                const DetailsMessage = URDSActive ? `URDS Upload deactivated` : '';
+                                console.log(`${StatusMessage}${DetailsMessage}`);
+                                sendToast('info', 'URDS Upload', `Plugin deactivated`, false, false);
+                            }
+                        }
+                        break;
                 }
-
+            } else {
+                console.log("Throttling: Ignored message due to time limit.");
             }
-            
-            // Check if no case was matched and execute the 500ms check
-            if (checkSuccessTimer) {
-                clearTimeout(checkSuccessTimer);
-            }
-        
-        } catch (error) {
-            console.error("Error handling WebSocket message:", error);
         }
+
+        // Check if no case was matched and execute the 500ms check
+        if (checkSuccessTimer) {
+            clearTimeout(checkSuccessTimer);
+        }
+    } catch (error) {
+        console.error("Error handling WebSocket message:", error);
     }
+}
+
 
     // Function to send an initial WebSocket message with the session ID
     async function sendInitialWebSocketMessage() {
