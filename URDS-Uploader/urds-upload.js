@@ -1,9 +1,9 @@
 (() => {
 ////////////////////////////////////////////////////////////////
 ///                                                          ///
-///  URDS UPLOADER CLIENT SCRIPT FOR FM-DX-WEBSERVER (V1.0e) ///
+///  URDS UPLOADER CLIENT SCRIPT FOR FM-DX-WEBSERVER (V1.0f) ///
 ///                                                          ///
-///  by Highpoint                last update: 14.01.25       ///
+///  by Highpoint                last update: 15.01.25       ///
 ///                                                          ///
 ///  https://github.com/Highpoint2000/URDSupload             ///
 ///                                                          ///
@@ -13,7 +13,7 @@ const updateInfo = true; // Enable or disable version check
 
 /////////////////////////////////////////////////////////////////
 
-    const plugin_version = '1.0e';
+    const plugin_version = '1.0f';
 	const plugin_path = 'https://raw.githubusercontent.com/highpoint2000/URDSupload/';
 	const plugin_JSfile = 'main/URDS-Uploader/urds-upload.js'
 	const plugin_name = 'URDS Uploader';
@@ -212,11 +212,11 @@ function handleWebSocketMessage(event) {
                             if (status === 'on') {
                                 const DetailsMessage = URDSActive ? `URDS Upload activated` : '';
                                 console.log(`${StatusMessage}${DetailsMessage}`);
-                                sendToast('info', 'URDS Upload', `Plugin activated`, false, false);
+                                sendToast('info', 'URDS Upload', `Autoupload activated`, false, false);
                             } else {
                                 const DetailsMessage = URDSActive ? `URDS Upload deactivated` : '';
                                 console.log(`${StatusMessage}${DetailsMessage}`);
-                                sendToast('info', 'URDS Upload', `Plugin deactivated`, false, false);
+                                sendToast('info', 'URDS Upload', `Autoupload deactivated`, false, false);
                             }
                         }
                         break;
