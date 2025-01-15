@@ -576,7 +576,6 @@ async function processFile(file, baseDir, filesToUpload, pendingGzCreations) {
       // Process each line and ensure it starts with "30,"
       const lines = fileContent.split('\n');
       lines.forEach(line => {
-		if (picode && !picode.includes('?')) { // Only add the line if the PI code is valid
 			const trimmedLine = line.trim();
 			if (trimmedLine) { // Skip empty lines
 				if (!trimmedLine.startsWith("30,")) {
@@ -585,7 +584,6 @@ async function processFile(file, baseDir, filesToUpload, pendingGzCreations) {
 					newContent += trimmedLine + '\n';
 				}
 			}
-		}
       });
 
       fs.writeFileSync(uploadFilePath, newContent);
