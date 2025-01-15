@@ -25,8 +25,8 @@ This plugin provides automaticly and manual upload functions for the scanner plu
 
 The following variables can be changed in the urds-upload.json:
 
-    URDSautoUpload: 'on', 			// Set Auto Upload after 0:00 UTC 'on' or 'off'
-    CombineFiles: 'off',			// Combine all files before uploading / set it 'on' or 'off'/ default is 'off'
+    URDSautoUpload: 'off', 			// Set Auto Upload after 0:00 UTC 'on' or 'off'
+    CombineFiles: 'on',			// Combine all files before uploading / set it 'on' or 'off'/ default is 'on'
     FMLIST_OM_ID: '',               	// Enter your OM ID here, for example: FMLIST_OM_ID: '1234', if no OMID is entered under FMLIST INTEGRATION on the web server
     FMLIST_EMAIL: '',              	 	// Enter your EMAIL here, for example: FMLIST_EMAIL: 'xxx@xxx.com', if no email is entered under IDENTIFICATION & MAP on the web server or it is another email adress
    	ServerName: '', 			// Enter your RaspiID or another name for the server, if left blank the name will be taken from the web server
