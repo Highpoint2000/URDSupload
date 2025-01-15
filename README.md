@@ -4,7 +4,7 @@ This plugin provides automaticly and manual upload functions for the scanner plu
 
 ![image](https://github.com/user-attachments/assets/d52b2e22-59d6-4b64-81c6-449300ef0f36)
 
-## v1.0e (only use with Scanner Plugin from Version 3.1!)
+## v1.0f (only use with Scanner Plugin from Version 3.1!)
 
 - Bug fixing and code optimizations
 
