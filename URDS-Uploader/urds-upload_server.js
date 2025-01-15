@@ -1,8 +1,8 @@
 ////////////////////////////////////////////////////////////////
 ///                                                          ///
-///  URDS UPLOADER SERVER SCRIPT FOR FM-DX-WEBSERVER (V1.0e) ///
+///  URDS UPLOADER SERVER SCRIPT FOR FM-DX-WEBSERVER (V1.0f) ///
 ///                                                          ///
-///  by Highpoint                last update: 14.01.25       ///
+///  by Highpoint                last update: 15.01.25       ///
 ///                                                          ///
 ///  https://github.com/Highpoint2000/URDSupload             ///
 ///                                                          ///
@@ -20,8 +20,8 @@ const configFilePath = path.join(__dirname, './../../plugins_configs/urds-upload
 
 // Default values for the configuration file
 const defaultConfig = {
-	URDSautoUpload: 'on', 			// Set Auto Upload after 0:00 UTC 'on' or 'off'
-	CombineFiles: 'off',			// Combine all files before uploading / set it 'on' or 'off'/ default is 'off'
+	URDSautoUpload: 'off', 			// Set Auto Upload after 0:00 UTC 'on' or 'off'
+	CombineFiles: 'on',			// Combine all files before uploading / set it 'on' or 'off'/ default is 'on'
     FMLIST_OM_ID: '',               // Enter your OM ID here, for example: FMLIST_OM_ID: '1234', if no OMID is entered under FMLIST INTEGRATION on the web server
     FMLIST_EMAIL: '',               // Enter your EMAIL here, for example: FMLIST_EMAIL: 'xxx@xxx.com', if no email is entered under IDENTIFICATION & MAP on the web server or it is another email adress
 	ServerName: '', 				// Enter your RaspiID or another name for the server, if left blank the name will be taken from the web server
@@ -469,7 +469,7 @@ async function processFilesWithCombination(logDir, uploadDir, ws, source) {
         fs.writeFileSync(combinedFilePath, combinedFileContent.join('\n'), 'utf-8');
         logInfo(`URDS Upload combined ${filesToCombine.length} files into ${timestamp}_combined_fm_rds.csv`);
     } else {
-        logInfo('URDS Upload found no files to combine in logDir.');
+        //logInfo('URDS Upload found no files to combine in logDir.');
     }
 }
 
@@ -576,20 +576,22 @@ async function processFile(file, baseDir, filesToUpload, pendingGzCreations) {
       // Process each line and ensure it starts with "30,"
       const lines = fileContent.split('\n');
       lines.forEach(line => {
-        const trimmedLine = line.trim();
-        if (trimmedLine) { // Skip empty lines
-          if (!trimmedLine.startsWith("30,")) {
-            newContent += "30," + trimmedLine + '\n';
-          } else {
-            newContent += trimmedLine + '\n';
-          }
-        }
+		if (picode && !picode.includes('?')) { // Only add the line if the PI code is valid
+			const trimmedLine = line.trim();
+			if (trimmedLine) { // Skip empty lines
+				if (!trimmedLine.startsWith("30,")) {
+					newContent += "30," + trimmedLine + '\n';
+				} else {
+					newContent += trimmedLine + '\n';
+				}
+			}
+		}
       });
 
       fs.writeFileSync(uploadFilePath, newContent);
 
 // Move backup file to backup folder
-if (file.includes('_combined_fm_rds.csv')) {
+//if (file.includes('_combined_fm_rds.csv')) {
   const backupPath = path.join(backupDir, file);
   if (!fs.existsSync(filePath)) {
     //logInfo(`Source file ${filePath} does not exist, skipping move.`);
@@ -602,9 +604,9 @@ if (file.includes('_combined_fm_rds.csv')) {
   } catch (error) {
     logError(`Error moving file ${file} to backup folder: ${error.message}`);
   }
-} else {
+//} else {
   //logInfo(`File ${file} does not match the required pattern, skipping.`);
-}
+//}
 
 
     if (!fs.existsSync(gzFilePath)) {
