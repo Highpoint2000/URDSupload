@@ -865,7 +865,7 @@ function scheduleTask() {
 }
 
 // Start the scheduled task
-if (URDSautoUpload && currentStatus === 'on') {
+if (URDSautoUpload === 'on' && currentStatus === 'on') {
     scheduleTask();
 }
 
