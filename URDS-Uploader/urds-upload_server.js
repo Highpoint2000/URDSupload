@@ -1,14 +1,12 @@
 ////////////////////////////////////////////////////////////////
 ///                                                          ///
-///  URDS UPLOADER SERVER SCRIPT FOR FM-DX-WEBSERVER (V1.0f) ///
+///  URDS UPLOADER SERVER SCRIPT FOR FM-DX-WEBSERVER (V1.0g) ///
 ///                                                          ///
-///  by Highpoint                last update: 15.01.25       ///
+///  by Highpoint                last update: 08.02.25       ///
 ///                                                          ///
 ///  https://github.com/Highpoint2000/URDSupload             ///
 ///                                                          ///
 ////////////////////////////////////////////////////////////////
-
-///  This plugin only works from web server version 1.2.8.1!!!
 
 const path = require('path');
 const fs = require('fs');
@@ -128,6 +126,11 @@ if (!FMLIST_OM_ID) {
 	FMLIST_OM_ID = config.extras.fmlistOmid;
 }
 
+if (FMLIST_OM_ID === '') {
+    logError("No valid FMLIST OMID found. URDS Upload not started.");
+    return;
+}
+
 function validateEmail(email) {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return re.test(email);
@@ -145,8 +148,8 @@ function getValidEmail() {
 
 const ValidEmailAddressTo = getValidEmail();
 
-if (ValidEmailAddressTo === '' && URDSautoUpload === 'on') {
-    logError("URDS Upload No valid email address found. URDS Upload not started.");
+if (ValidEmailAddressTo === '') {
+    logError("No valid email address found. URDS Upload not started.");
     return;
 }
 
@@ -568,7 +571,9 @@ async function processFile(file, baseDir, filesToUpload, pendingGzCreations) {
       const { picodeCount, psInfoCount, distinctPicodeCount } = countPicodesAndPSInfo(fileContent);
 
       const header = await setHeader(); // Wait for the header to be ready
-      const newHeader = header + '\n15, ' + picodeCount + ', ' + psInfoCount + ', ' + distinctPicodeCount;
+      const newHeader = header
+		+ '\n15,"' + picodeCount + ', ' + psInfoCount + ', ' + distinctPicodeCount + '"'
+		+ '\n17,"dbµV"';  
 
       // Start building the new content with the header
       let newContent = newHeader + '\n';
@@ -698,15 +703,21 @@ function sendWebSocketNotification(status, subject, message, source) {
 
 // Connect to the main WebSocket server
 function connectToWebSocket() {
-    if (URDSautoUpload === 'on' && !ValidEmailAddressTo.includes('@')) {
+	
+    if (!ValidEmailAddressTo.includes('@')) {
         logError("Email Address not set or invalid format! URDS Upload not started.");
         return;
     }
+	
+	if (FMLIST_OM_ID === '') {
+        logError("No valid FMLIST OMID found. URDS Upload not started.");
+		return;
+	}
 
     ws = new WebSocket(externalWsUrl + '/data_plugins');
 
     ws.on('open', () => {
-        // logInfo(`DX-Alert connected to ${ws.url}`);
+        // logInfo(`URDS Upload connected to ${ws.url}`);
         ws.send(JSON.stringify(createMessage(currentStatus, '000000000000'))); // Send initial status
         // Delay the logging of broadcast info by 100 ms
         setTimeout(() => {
@@ -717,7 +728,7 @@ function connectToWebSocket() {
 
     ws.on('message', (data) => handleWebSocketMessage(data, ws));
 
-    ws.on('error', (error) => logError('DX-Alert WebSocket error:', error));
+    ws.on('error', (error) => logError('URDS Upload WebSocket error:', error));
 
     ws.on('close', (code, reason) => {
         logInfo(`WebSocket connection closed. Code: ${code}, Reason: ${reason}`);
