@@ -1,12 +1,12 @@
-////////////////////////////////////////////////////////////////
-///                                                          ///
-///  URDS UPLOADER SERVER SCRIPT FOR FM-DX-WEBSERVER (V1.0g) ///
-///                                                          ///
-///  by Highpoint                last update: 08.02.25       ///
-///                                                          ///
-///  https://github.com/Highpoint2000/URDSupload             ///
-///                                                          ///
-////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////
+///                                                               ///
+///  URDS UPLOADER SERVER SCRIPT FOR FM-DX-WEBSERVER (V1.0h BETA) ///
+///                                                               ///
+///  by Highpoint                last update: 15.02.25            ///
+///                                                               ///
+///  https://github.com/Highpoint2000/URDSupload                  ///
+///                                                               ///
+/////////////////////////////////////////////////////////////////////
 
 const path = require('path');
 const fs = require('fs');
@@ -18,14 +18,14 @@ const configFilePath = path.join(__dirname, './../../plugins_configs/urds-upload
 
 // Default values for the configuration file
 const defaultConfig = {
-	URDSautoUpload: 'off', 			// Set Auto Upload after 0:00 UTC 'on' or 'off'
-	CombineFiles: 'on',			// Combine all files before uploading / set it 'on' or 'off'/ default is 'on'
+    URDSautoUpload: 'off',          // Set Auto Upload after 0:00 UTC 'on' or 'off'
+    CombineFiles: 'on',             // Combine all files before uploading / set it 'on' or 'off'/ default is 'on'
     FMLIST_OM_ID: '',               // Enter your OM ID here, for example: FMLIST_OM_ID: '1234', if no OMID is entered under FMLIST INTEGRATION on the web server
     FMLIST_EMAIL: '',               // Enter your EMAIL here, for example: FMLIST_EMAIL: 'xxx@xxx.com', if no email is entered under IDENTIFICATION & MAP on the web server or it is another email adress
-	ServerName: '', 				// Enter your RaspiID or another name for the server, if left blank the name will be taken from the web server
-	ServerDescription: '',			// Enter a comment or description for the server, if left blank the name will be taken from the web server
-	PublicationMode: 'public',		// Enter the publishing mode: 'public', 'owner' or 'restricted' (default: 'public')
-	OperatingMode: 'fixed'			// Enter 'mobile' or 'fixed' for stationary operation
+    ServerName: '',                 // Enter your RaspiID or another name for the server, if left blank the name will be taken from the web server
+    ServerDescription: '',          // Enter a comment or description for the server, if left blank the name will be taken from the web server
+    PublicationMode: 'public',      // Enter the publishing mode: 'public', 'owner' or 'restricted' (default: 'public')
+    OperatingMode: 'fixed'          // Enter 'mobile' or 'fixed' for stationary operation
 };
 
 // Function to merge default config with existing config
@@ -66,14 +66,14 @@ function loadConfig(filePath) {
 
 const configPlugin = loadConfig(configFilePath);
 
-  let URDSautoUpload = configPlugin.URDSautoUpload;
-  let CombineFiles = configPlugin.CombineFiles;
-  let FMLIST_OM_ID = configPlugin.FMLIST_OM_ID;
-  let FMLIST_EMAIL = configPlugin.FMLIST_EMAIL;
-  let ServerName = configPlugin.ServerName; 
-  let ServerDescription = configPlugin.ServerDescription;	
-  let PublicationMode = configPlugin.PublicationMode;
-  let OperatingMode = configPlugin.OperatingMode;
+let URDSautoUpload = configPlugin.URDSautoUpload;
+let CombineFiles = configPlugin.CombineFiles;
+let FMLIST_OM_ID = configPlugin.FMLIST_OM_ID;
+let FMLIST_EMAIL = configPlugin.FMLIST_EMAIL;
+let ServerName = configPlugin.ServerName; 
+let ServerDescription = configPlugin.ServerDescription; 
+let PublicationMode = configPlugin.PublicationMode;
+let OperatingMode = configPlugin.OperatingMode;
 
 ////////////////////////////////////////////////////////////////
 
@@ -123,7 +123,7 @@ if (URDSautoUpload === 'on') {
 }
 
 if (!FMLIST_OM_ID) {
-	FMLIST_OM_ID = config.extras.fmlistOmid;
+    FMLIST_OM_ID = config.extras.fmlistOmid;
 }
 
 if (FMLIST_OM_ID === '') {
@@ -159,12 +159,12 @@ if (!ServerName) {
 }
 
 if (!ServerDescription) {
-	ServerDescription = config.identification.tunerDesc
-		.replace(/%20/g, ' '); // Encode and replace spaces with a space character
+    ServerDescription = config.identification.tunerDesc
+        .replace(/%20/g, ' '); // Encode and replace spaces with a space character
 }
 
 // Read the plugin version from the client file
-let UploaderPluginVersion
+let UploaderPluginVersion;
 const UploaderfilePath = path.join(__dirname, 'urds-upload.js');
 fs.readFile(UploaderfilePath, 'utf8', (err, data) => {
     if (err) {
@@ -175,12 +175,12 @@ fs.readFile(UploaderfilePath, 'utf8', (err, data) => {
     if (versionMatch && versionMatch[1]) {
         UploaderPluginVersion = versionMatch[1];
     } else {
-        LogError('URDS Upload Error! Plugin version nicht gefunden.');
+        logError('URDS Upload Error! Plugin version nicht gefunden.');
     }
 });
 
 // Read the plugin version from the client file
-let ScannerPluginVersion
+let ScannerPluginVersion;
 const ScannerfilePath = path.join(__dirname, '..', 'Scanner', 'scanner.js');
 fs.readFile(ScannerfilePath, 'utf8', (err, data) => {
     if (err) {
@@ -191,7 +191,7 @@ fs.readFile(ScannerfilePath, 'utf8', (err, data) => {
     if (versionMatch && versionMatch[1]) {
         ScannerPluginVersion = versionMatch[1];
     } else {
-        LogError('URDS Upload Error! Scanner plugin version nicht gefunden.');
+        logError('URDS Upload Error! Scanner plugin version nicht gefunden.');
     }
 });
 
@@ -273,14 +273,14 @@ const uploadFile = async (file) => {
 
         const response = await axios.post('https://www.fmlist.org/urds/csvup.php', formData, {
             headers: {
-                 ...formData.getHeaders()
+                ...formData.getHeaders()
             }
         });
 
         if (response.data === 'Thank you!') {
-			
-			const fileName = path.basename(file);
-			logInfo(`URDS Upload => ${fileName} success. Moving to sent directory`);		
+
+            const fileName = path.basename(file);
+            logInfo(`URDS Upload => ${fileName} success. Moving to sent directory`);
 
             // Move the .gz file to the SENT directory
             const gzTargetPath = path.join(sentDir, path.basename(file));
@@ -305,15 +305,15 @@ const uploadFile = async (file) => {
             }
 
             // Mark to send WebSocket message once all files are processed
-			MessageLog = true;
-			
+            MessageLog = true;
+
         } else {
             logWarn(' URDS Upload => fail! keeping file for later upload.');
-			MessageWarn = true;
+            MessageWarn = true;
         }
     } catch (error) {
         logError(`Error uploading ${file}:`, error.message);
-		MessageError = true;
+        MessageError = true;
     }
 
 };
@@ -321,6 +321,9 @@ const uploadFile = async (file) => {
 // Function to handle multiple file uploads
 const uploadAllFiles = async (ws,source) => {
     const files = fs.readdirSync(uploadDir);
+
+    // DEBUG: Zeige gefundene Dateien
+    logInfo(`DEBUG: uploadAllFiles() - Found ${files.length} items in uploadDir`);
 
     // Filter for .gz files
     const gzFiles = files.filter(file => file.endsWith('.gz')).map(file => path.join(uploadDir, file));
@@ -330,89 +333,85 @@ const uploadAllFiles = async (ws,source) => {
         return;
     }
 
+    logInfo(`DEBUG: uploadAllFiles() - GZ-Files to upload: ${gzFiles.length}`);
+
     // Process each file
     for (const file of gzFiles) {
         await uploadFile(file); // Wait for each upload to finish before proceeding to the next
     }
-	
-	// Send WebSocket message once after all uploads are processed
-	if (ws.readyState === WebSocket.OPEN) {
-		if (MessageError) {
-			ws.send(JSON.stringify(createMessage(`error`, source)));
-			} else if (MessageWarn) {
-				ws.send(JSON.stringify(createMessage(`warn`, source)));
-				} else if (MessageLog) {
-					ws.send(JSON.stringify(createMessage(`ok`, source)));
-				}
-		//logInfo("WebSocket message sent.");
-	}
-	
+    
+    // Send WebSocket message once after all uploads are processed
+    if (ws.readyState === WebSocket.OPEN) {
+        if (MessageError) {
+            ws.send(JSON.stringify(createMessage(`error`, source)));
+        } else if (MessageWarn) {
+            ws.send(JSON.stringify(createMessage(`warn`, source)));
+        } else if (MessageLog) {
+            ws.send(JSON.stringify(createMessage(`ok`, source)));
+        }
+        //logInfo("WebSocket message sent.");
+    }
 };
 
 function countPicodesAndPSInfo(fileContent) {
-  const lines = fileContent.split('\n');
-  const freqData = {}; // Object to store frequency data
+    const lines = fileContent.split('\n');
+    const freqData = {}; // Object to store frequency data
 
-  // Iterate through all lines of the input text
-  lines.forEach((line, index) => {
-    const columns = line.split(',');
+    // Iterate through all lines of the input text
+    lines.forEach((line, index) => {
+        const columns = line.split(',');
 
-    // Ensure there are enough columns
-    if (columns.length > 14) {
-      const freq = columns[2].trim(); // 4th column (Index 3) for Frequency
-      const picode = columns[12].trim(); // 14th column (Index 13) for Picodes
-      const psInfo = columns[14].trim(); // 16th column (Index 15) for PS Info
+        // Ensure there are enough columns
+        if (columns.length > 14) {
+            const freq = columns[2].trim();    // 4th column (Index 3) for Frequency
+            const picode = columns[12].trim(); // 14th column (Index 13) for Picodes
+            const psInfo = columns[14].trim(); // 16th column (Index 15) for PS Info
 
-      // Initialize if the frequency doesn't exist in the object
-      if (!freqData[freq]) {
-        freqData[freq] = {
-          picodes: new Set(), // Set for unique Picodes
-          validPsInfo: false, // Track if a valid PS Info exists
-          distinctPicode: false, // Track if picode RAW exists
-        };
-      }
+            // Initialize if the frequency doesn't exist in the object
+            if (!freqData[freq]) {
+                freqData[freq] = {
+                    picodes: new Set(),  // Set for unique Picodes
+                    validPsInfo: false,  // Track if a valid PS Info exists
+                    distinctPicode: false, // Track if picode RAW exists
+                };
+            }
 
-      // Add Picodes to the set if valid
-      if (picode && !picode.includes('?')) {
-        freqData[freq].picodes.add(picode);
-      }
+            // Add Picodes to the set if valid
+            if (picode && !picode.includes('?')) {
+                freqData[freq].picodes.add(picode);
+            }
 
-      // Check for valid PS Info
-      if (picode && !picode.includes('?') && psInfo.trim().replace(/["']/g, '') !== '?' && !psInfo.includes('?')) {
-        freqData[freq].validPsInfo = true;
-      }
+            // Check for valid PS Info
+            if (picode && !picode.includes('?') && psInfo.trim().replace(/["']/g, '') !== '?' && !psInfo.includes('?')) {
+                freqData[freq].validPsInfo = true;
+            }
 
-      // Check for distinct Picodes
-      if (picode && !picode.includes('?') && psInfo.trim().replace(/["']/g, '') === '?') {
-        freqData[freq].distinctPicode = true;
-      }
+            // Check for distinct Picodes
+            if (picode && !picode.includes('?') && psInfo.trim().replace(/["']/g, '') === '?') {
+                freqData[freq].distinctPicode = true;
+            }
+        }
+    });
+
+    // Count the totals
+    let picodeCount = 0;
+    let psInfoCount = 0;
+    let distinctPicodeCount = 0;
+
+    // Iterate over frequencies to calculate totals
+    for (const freq in freqData) {
+        if (freqData[freq].picodes.size > 0) {
+            picodeCount += 1; // Each frequency with at least one valid Picode
+        }
+
+        if (freqData[freq].validPsInfo) {
+            psInfoCount += 1; // Count frequencies with at least one valid PS Info
+        } else if (freqData[freq].distinctPicode) {
+            distinctPicodeCount += 1; // Count frequencies with invalid PS Info
+        }
     }
-  });
 
-  // Count the totals
-  let picodeCount = 0;
-  let psInfoCount = 0;
-  let distinctPicodeCount = 0;
-
-  // Iterate over frequencies to calculate totals
-  for (const freq in freqData) {
-    if (freqData[freq].picodes.size > 0) {
-      picodeCount += 1; // Each frequency with at least one valid Picode
-    }
-
-    if (freqData[freq].validPsInfo) {
-      psInfoCount += 1; // Count frequencies with at least one valid PS Info
-    } else if (freqData[freq].distinctPicode) {
-      distinctPicodeCount += 1; // Count frequencies with invalid PS Info
-    }
-  }
-
-  // console.log("Total Picodes:", picodeCount);
-  // console.log("Total Valid PS Infos:", psInfoCount);
-  // console.log("Frequencies with Invalid PS Info:", distinctPicodeCount);
-
-  // Return all computed values
-  return { picodeCount, psInfoCount, distinctPicodeCount };
+    return { picodeCount, psInfoCount, distinctPicodeCount };
 }
 
 async function processFilesWithCombination(logDir, uploadDir, ws, source) {
@@ -430,31 +429,30 @@ async function processFilesWithCombination(logDir, uploadDir, ws, source) {
 
     // Alle relevanten Dateien im Ordner filtern
     const filesToCombine = fs.readdirSync(logDir)
-      .filter(file => file.endsWith('_fm_rds.csv') && !file.startsWith('SCANNER') && !file.startsWith('scan'))
-      .map(file => {
-        const filePath = path.join(logDir, file);
-        const fileSize = fs.statSync(filePath).size;
+        .filter(file => file.endsWith('_fm_rds.csv') && !file.startsWith('SCANNER') && !file.startsWith('scan'))
+        .map(file => {
+            const filePath = path.join(logDir, file);
+            const fileSize = fs.statSync(filePath).size;
 
-        // 0-KB-Dateien prÃ¼fen und lÃ¶schen
-        if (fileSize === 0) {
-            try {
-                fs.unlinkSync(filePath);
-                logInfo(`URDS Upload deleted empty CSV file ${file}`);
-            } catch (error) {
-                logError(`URDS Upload Error deleting file ${file}: ${error.message}`);
+            // 0-KB-Dateien prüfen und löschen
+            if (fileSize === 0) {
+                try {
+                    fs.unlinkSync(filePath);
+                    logInfo(`URDS Upload deleted empty CSV file ${file}`);
+                } catch (error) {
+                    logError(`URDS Upload Error deleting file ${file}: ${error.message}`);
+                }
+                return null; // Datei nicht zur Verarbeitung hinzufügen
             }
-            return null; // Datei nicht zur Verarbeitung hinzufÃ¼gen
-        }
 
-        return {
-          file,
-          time: fs.statSync(filePath).mtime.getTime()
-        };
-      })
-      .filter(Boolean) // Null-Werte entfernen
-      .sort((a, b) => a.time - b.time);
+            return {
+                file,
+                time: fs.statSync(filePath).mtime.getTime()
+            };
+        })
+        .filter(Boolean) // Null-Werte entfernen
+        .sort((a, b) => a.time - b.time);
 
-    // Wenn mehr als eine Datei gefunden wird, kombinieren
     if (filesToCombine.length > 1) {
         filesToCombine.forEach(({ file }) => {
             const filePath = path.join(logDir, file);
@@ -472,197 +470,203 @@ async function processFilesWithCombination(logDir, uploadDir, ws, source) {
         fs.writeFileSync(combinedFilePath, combinedFileContent.join('\n'), 'utf-8');
         logInfo(`URDS Upload combined ${filesToCombine.length} files into ${timestamp}_combined_fm_rds.csv`);
     } else {
-        //logInfo('URDS Upload found no files to combine in logDir.');
+        // DEBUG: Info, wenn kein Kombinieren nötig/erfolgt
+        logInfo('DEBUG: No multiple files found to combine or only single file. Skipping combination.');
     }
 }
 
 function copyCsvFilesWithHeader(ws, source) {
-  // Ensure the destination directories exist
-  if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-    logInfo(`URDS Upload created Directory ${uploadDir}`);
-  }
-  if (!fs.existsSync(sentDir)) {
-    fs.mkdirSync(sentDir, { recursive: true });
-    logInfo(`URDS Upload created Directory ${sentDir}`);
-  }
-  
-  if (CombineFiles === 'on') {
-	processFilesWithCombination(logDir, uploadDir, ws, source);
-  }
-  
-  const filesToUpload = new Set(); // Track files to be uploaded
-  const pendingGzCreations = new Set(); // Track ongoing .gz creations
-
-  // Process files in logDir
-  fs.readdirSync(logDir).forEach(file => {
-    processFile(file, logDir, filesToUpload, pendingGzCreations, ws, source);
-  });
-
-  // Process files directly in uploadDir
-  fs.readdirSync(uploadDir).forEach(file => {
-    processUploadDirFile(file, filesToUpload, pendingGzCreations, ws, source);
-  });
-
-  // Monitor completion of .gz creations and trigger upload
-  const monitorInterval = setInterval(() => {
-    if (pendingGzCreations.size === 0) {
-      clearInterval(monitorInterval);
-      if (filesToUpload.size > 0) {
-        uploadAllFiles(ws, source); // Only upload once
-      } else {
-        logInfo('URDS Upload have no files to upload');
-		ws.send(JSON.stringify(createMessage(`no`, source)));
-      }
+    logInfo('DEBUG: Start copyCsvFilesWithHeader() - Checking for new CSV files to upload...');
+    
+    // Ensure the destination directories exist
+    if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+        logInfo(`URDS Upload created Directory ${uploadDir}`);
     }
-  }, 500); // Check every 500ms
+    if (!fs.existsSync(sentDir)) {
+        fs.mkdirSync(sentDir, { recursive: true });
+        logInfo(`URDS Upload created Directory ${sentDir}`);
+    }
+
+    // Bei "CombineFiles" erst versuchen zu kombinieren
+    if (CombineFiles === 'on') {
+        processFilesWithCombination(logDir, uploadDir, ws, source);
+    }
+
+    const filesToUpload = new Set(); // Track files to be uploaded
+    const pendingGzCreations = new Set(); // Track ongoing .gz creations
+
+    // Process files in logDir
+    fs.readdirSync(logDir).forEach(file => {
+        processFile(file, logDir, filesToUpload, pendingGzCreations, ws, source);
+    });
+
+    // Process files directly in uploadDir
+    fs.readdirSync(uploadDir).forEach(file => {
+        processUploadDirFile(file, filesToUpload, pendingGzCreations, ws, source);
+    });
+
+    // DEBUG: Log welche Dateien wir jetzt hochladen möchten
+    logInfo(`DEBUG: Found ${filesToUpload.size} .gz files queued for upload (after GZ creation).`);
+
+    // Monitor completion of .gz creations and trigger upload
+    const monitorInterval = setInterval(() => {
+        if (pendingGzCreations.size === 0) {
+            clearInterval(monitorInterval);
+            logInfo('DEBUG: All pending .gz creations finished.');
+
+            if (filesToUpload.size > 0) {
+                uploadAllFiles(ws, source); // Only upload once
+            } else {
+                logInfo('URDS Upload have no files to upload');
+                ws.send(JSON.stringify(createMessage(`no`, source)));
+            }
+        } else {
+            // DEBUG: Log, dass wir noch warten
+            logInfo(`DEBUG: Waiting for .gz creation to finish. Remaining: ${pendingGzCreations.size}`);
+        }
+    }, 500); // Check every 500ms
 }
 
 async function setHeader() {
-  return new Promise((resolve) => {
-    header = `10,"${FMLIST_EMAIL}"\n`;
-    const singleLineServerName = ServerName.replace(/\n/g, ' '); // Remove line breaks from ServerName
-    header += `11,"${FMLIST_OM_ID}","${singleLineServerName}"\n`;
-    header += `111,"os-release ${os.platform()} ${os.release()}"\n`;
-    header += `112,"architecture ${os.arch()}"\n`;
-    header += `113,"UploaderPluginVersion ${UploaderPluginVersion}", "ScannerPluginVersion ${ScannerPluginVersion}"\n`;
-    const singleLineDescription = ServerDescription.replace(/\n/g, ' '); // Remove line breaks from ServerDescription
-    header += `12,"${singleLineDescription}"\n`;
-    header += `13,"${PublicationMode}",""\n`;
-    header += `14,"${OperatingMode}"`;
-    resolve(header);
-  });
+    return new Promise((resolve) => {
+        header = `10,"${FMLIST_EMAIL}"\n`;
+        const singleLineServerName = ServerName.replace(/\n/g, ' '); // Remove line breaks from ServerName
+        header += `11,"${FMLIST_OM_ID}","${singleLineServerName}"\n`;
+        header += `111,"os-release ${os.platform()} ${os.release()}"\n`;
+        header += `112,"architecture ${os.arch()}"\n`;
+        header += `113,"UploaderPluginVersion ${UploaderPluginVersion}", "ScannerPluginVersion ${ScannerPluginVersion}"\n`;
+        const singleLineDescription = ServerDescription.replace(/\n/g, ' '); // Remove line breaks from ServerDescription
+        header += `12,"${singleLineDescription}"\n`;
+        header += `13,"${PublicationMode}",""\n`;
+        header += `14,"${OperatingMode}"`;
+        resolve(header);
+    });
 }
 
-async function processFile(file, baseDir, filesToUpload, pendingGzCreations) {
-  const filePath = path.join(baseDir, file);
-  const uploadFilePath = path.join(uploadDir, file);
-  const gzFileName = file.replace('_fm_rds.csv', '_upload.csv.gz');
-  const gzFilePath = path.join(uploadDir, gzFileName);
+async function processFile(file, baseDir, filesToUpload, pendingGzCreations, ws, source) {
+    const filePath = path.join(baseDir, file);
+    const uploadFilePath = path.join(uploadDir, file);
+    const gzFileName = file.replace('_fm_rds.csv', '_upload.csv.gz');
+    const gzFilePath = path.join(uploadDir, gzFileName);
 
-  const backupDir = path.join(baseDir, 'backup');
+    const backupDir = path.join(baseDir, 'backup');
 
-  // Ensure the backup folder exists
-  if (!fs.existsSync(backupDir)) {
-    fs.mkdirSync(backupDir, { recursive: true });
-    logInfo(`URDS Upload created Backup folder`);
-  }
-
-  // Check if file name ends with '_fm_rds.csv' and ignore 'SCANNER*.csv'
-  if (!file.endsWith('_fm_rds.csv') || file.startsWith('SCANNER') || file.startsWith('scan')) {
-    return;
-  }
-
-  const fileStat = fs.statSync(filePath);
-  if (fileStat.isFile()) {
-    // Handle 0 KB files
-    if (fileStat.size === 0) {
-      try {
-        fs.unlinkSync(filePath);
-        logInfo(`URDS Upload deleted empty CSV file ${file}`);
-      } catch (error) {
-        logError(`URDS Upload Error deleting file ${file}: ${error.message}`);
-      }
-      return; // Exit early after deletion
+    // Ensure the backup folder exists
+    if (!fs.existsSync(backupDir)) {
+        fs.mkdirSync(backupDir, { recursive: true });
+        logInfo(`URDS Upload created Backup folder`);
     }
 
-    if (!fs.existsSync(uploadFilePath)) {
-      const fileContent = fs.readFileSync(filePath, 'utf-8');
-      const { picodeCount, psInfoCount, distinctPicodeCount } = countPicodesAndPSInfo(fileContent);
-
-      const header = await setHeader(); // Wait for the header to be ready
-      const newHeader = header
-		+ '\n15,"' + picodeCount + ', ' + psInfoCount + ', ' + distinctPicodeCount + '"'
-		+ '\n17,"dbµV"';  
-
-      // Start building the new content with the header
-      let newContent = newHeader + '\n';
-
-      // Process each line and ensure it starts with "30,"
-      const lines = fileContent.split('\n');
-      lines.forEach(line => {
-			const trimmedLine = line.trim();
-			if (trimmedLine) { // Skip empty lines
-				if (!trimmedLine.startsWith("30,")) {
-					newContent += "30," + trimmedLine + '\n';
-				} else {
-					newContent += trimmedLine + '\n';
-				}
-			}
-      });
-
-      fs.writeFileSync(uploadFilePath, newContent);
-
-// Move backup file to backup folder
-//if (file.includes('_combined_fm_rds.csv')) {
-  const backupPath = path.join(backupDir, file);
-  if (!fs.existsSync(filePath)) {
-    //logInfo(`Source file ${filePath} does not exist, skipping move.`);
-    return;
-  }
-
-  try {
-    fs.renameSync(filePath, backupPath);
-    logInfo(`URDS Upload moved file ${file} to backup folder`);
-  } catch (error) {
-    logError(`Error moving file ${file} to backup folder: ${error.message}`);
-  }
-//} else {
-  //logInfo(`File ${file} does not match the required pattern, skipping.`);
-//}
-
-
-    if (!fs.existsSync(gzFilePath)) {
-      createGzFile(uploadFilePath, gzFilePath, filesToUpload, pendingGzCreations, gzFileName, ws, source);
-    } else {
-      filesToUpload.add(gzFileName); // Mark for upload if .gz already exists
+    // Check if file name ends with '_fm_rds.csv' and ignore 'SCANNER*.csv'
+    if (!file.endsWith('_fm_rds.csv') || file.startsWith('SCANNER') || file.startsWith('scan')) {
+        return;
     }
-  }
-}
-}
 
+    const fileStat = fs.statSync(filePath);
+    if (fileStat.isFile()) {
+        // Handle 0 KB files
+        if (fileStat.size === 0) {
+            try {
+                fs.unlinkSync(filePath);
+                logInfo(`URDS Upload deleted empty CSV file ${file}`);
+            } catch (error) {
+                logError(`URDS Upload Error deleting file ${file}: ${error.message}`);
+            }
+            return; // Exit early after deletion
+        }
+
+        if (!fs.existsSync(uploadFilePath)) {
+            const fileContent = fs.readFileSync(filePath, 'utf-8');
+            const { picodeCount, psInfoCount, distinctPicodeCount } = countPicodesAndPSInfo(fileContent);
+
+            const header = await setHeader(); // Wait for the header to be ready
+            const newHeader = header
+                + '\n15,"' + picodeCount + ', ' + psInfoCount + ', ' + distinctPicodeCount + '"'
+                + '\n17,"dbµV"';  
+
+            // Start building the new content with the header
+            let newContent = newHeader + '\n';
+
+            // Process each line and ensure it starts with "30,"
+            const lines = fileContent.split('\n');
+            lines.forEach(line => {
+                const trimmedLine = line.trim();
+                if (trimmedLine) { // Skip empty lines
+                    if (!trimmedLine.startsWith("30,")) {
+                        newContent += "30," + trimmedLine + '\n';
+                    } else {
+                        newContent += trimmedLine + '\n';
+                    }
+                }
+            });
+
+            fs.writeFileSync(uploadFilePath, newContent);
+
+            // Verschieben in den Backup-Ordner (falls gewünscht)  
+            const backupPath = path.join(backupDir, file);
+            if (!fs.existsSync(filePath)) {
+                //logInfo(`Source file ${filePath} does not exist, skipping move.`);
+                return;
+            }
+
+            try {
+                fs.renameSync(filePath, backupPath);
+                logInfo(`URDS Upload moved file ${file} to backup folder`);
+            } catch (error) {
+                logError(`Error moving file ${file} to backup folder: ${error.message}`);
+            }
+
+            if (!fs.existsSync(gzFilePath)) {
+                createGzFile(uploadFilePath, gzFilePath, filesToUpload, pendingGzCreations, gzFileName, ws, source);
+            } else {
+                filesToUpload.add(gzFileName); // Mark for upload if .gz already exists
+            }
+        }
+    }
+}
 
 // Helper function to process files in uploadDir
 function processUploadDirFile(file, filesToUpload, pendingGzCreations, ws, source) {
-  const filePath = path.join(uploadDir, file);
-  const gzFileName = file.replace('_fm_rds.csv', '_upload.csv.gz');
-  const gzFilePath = path.join(uploadDir, gzFileName);
+    const filePath = path.join(uploadDir, file);
+    const gzFileName = file.replace('_fm_rds.csv', '_upload.csv.gz');
+    const gzFilePath = path.join(uploadDir, gzFileName);
 
-  if (file.endsWith('_fm_rds.csv') && fs.existsSync(gzFilePath)) {
-    filesToUpload.add(gzFileName); // Both CSV and .gz exist, mark for upload
-    //logInfo(`Marking ${gzFileName} for upload.`);
-  } else if (file.endsWith('.csv') && !fs.existsSync(gzFilePath)) {
-    createGzFile(filePath, gzFilePath, filesToUpload, pendingGzCreations, gzFileName, ws, source);
-  }
+    if (file.endsWith('_fm_rds.csv') && fs.existsSync(gzFilePath)) {
+        filesToUpload.add(gzFileName); // Both CSV and .gz exist, mark for upload
+        //logInfo(`Marking ${gzFileName} for upload.`);
+    } else if (file.endsWith('.csv') && !fs.existsSync(gzFilePath)) {
+        createGzFile(filePath, gzFilePath, filesToUpload, pendingGzCreations, gzFileName, ws, source);
+    }
 }
 
 // Create a .gz file and mark it for upload
 function createGzFile(inputPath, outputPath, filesToUpload, pendingGzCreations, gzFileName, ws, source) {
-  if (pendingGzCreations.has(inputPath)) {
-    return; // Avoid duplicate gzipping
-  }
-
-  pendingGzCreations.add(inputPath);
-
-  const gzip = zlib.createGzip();
-  const input = fs.createReadStream(inputPath);
-  const output = fs.createWriteStream(outputPath);
-
-  input.pipe(gzip).pipe(output);
-
-  output.on('finish', () => {
-    pendingGzCreations.delete(inputPath);
-    if (fs.existsSync(outputPath)) {
-      filesToUpload.add(gzFileName); // Mark file as ready for upload
-      logInfo(`URDS Upload created Gzipped file ${gzFileName}`);
+    if (pendingGzCreations.has(inputPath)) {
+        return; // Avoid duplicate gzipping
     }
-  });
 
-  output.on('error', (err) => {
-    pendingGzCreations.delete(inputPath);
-    logError(`URDS Upload failed to create gzipped file ${gzFileName}: ${err.message}`);
-	ws.send(JSON.stringify(createMessage(`fail`, source)));
-  });
+    pendingGzCreations.add(inputPath);
+
+    const gzip = zlib.createGzip();
+    const input = fs.createReadStream(inputPath);
+    const output = fs.createWriteStream(outputPath);
+
+    input.pipe(gzip).pipe(output);
+
+    output.on('finish', () => {
+        pendingGzCreations.delete(inputPath);
+        if (fs.existsSync(outputPath)) {
+            filesToUpload.add(gzFileName); // Mark file as ready for upload
+            logInfo(`URDS Upload created Gzipped file ${gzFileName}`);
+        }
+    });
+
+    output.on('error', (err) => {
+        pendingGzCreations.delete(inputPath);
+        logError(`URDS Upload failed to create gzipped file ${gzFileName}: ${err.message}`);
+        ws.send(JSON.stringify(createMessage(`fail`, source)));
+    });
 }
 
 function createMessage(currentStatus, source) {
@@ -703,16 +707,15 @@ function sendWebSocketNotification(status, subject, message, source) {
 
 // Connect to the main WebSocket server
 function connectToWebSocket() {
-	
     if (!ValidEmailAddressTo.includes('@')) {
         logError("Email Address not set or invalid format! URDS Upload not started.");
         return;
     }
-	
-	if (FMLIST_OM_ID === '') {
+
+    if (FMLIST_OM_ID === '') {
         logError("No valid FMLIST OMID found. URDS Upload not started.");
-		return;
-	}
+        return;
+    }
 
     ws = new WebSocket(externalWsUrl + '/data_plugins');
 
@@ -723,7 +726,6 @@ function connectToWebSocket() {
         setTimeout(() => {
             logBroadcastInfo();
         }, 100);
-
     });
 
     ws.on('message', (data) => handleWebSocketMessage(data, ws));
@@ -741,18 +743,17 @@ function connectToWebSocket() {
 
 // Log broadcast information based on current status
 function logBroadcastInfo() {
-			if (currentStatus === 'on' && URDSautoUpload === 'on') {
-				logInfo(`URDS Upload service are turned on`);
-			} else {
-				logInfo(`URDS Upload service are turned off`);
-			}
+    if (currentStatus === 'on' && URDSautoUpload === 'on') {
+        logInfo(`URDS Upload service are turned on`);
+    } else {
+        logInfo(`URDS Upload service are turned off`);
+    }
 }
 
 // Handle incoming WebSocket messages
 function handleWebSocketMessage(data, ws) {
     try {
         const message = JSON.parse(data.toString());
-
         if (message.source === clientID) return; // Ignore messages from self
 
         if (message.type === 'URDSupload') {
@@ -767,7 +768,7 @@ if (CombineFiles === 'on') {
     logInfo(`URDS Upload "combine all files function" is on`);
 }
 
-// Handle DX-Alert specific WebSocket messages
+// Handle URDSupload specific WebSocket messages
 let lastStartTimestamp = 0;
 
 function handleURDSMessage(message, ws) {
@@ -800,14 +801,12 @@ function handleURDSMessage(message, ws) {
             MessageLog = false;
             MessageWarn = false;
             MessageError = false;
-            MessageCode = 0;
             copyCsvFilesWithHeader(ws, source);
         } else {
             logInfo(`"Start upload" message from ${message.source} ignored due to throttle limit.`);
         }
     }
 }
-
 
 // Set up a separate connection for the /data_plugins WebSocket endpoint
 function setupdata_pluginsWebSocket() {
@@ -836,6 +835,8 @@ function scheduleTask() {
         timeUntilMidnight += 24 * 60 * 60 * 1000; // Add 24 hours in milliseconds
     }
 
+    logInfo(`DEBUG: scheduleTask() - Time until next midnight (UTC): ${timeUntilMidnight / 1000} seconds`);
+
     logInfo(`URDS Auto Upload scheduled to start at UTC midnight.`);
 
     // Wait until midnight UTC
@@ -849,15 +850,19 @@ function scheduleTask() {
                 const MAX_MINUTES = 120;
                 const waitSeconds = Math.floor(Math.random() * MAX_MINUTES * 60);
 
-                logInfo(`URDS Auto Upload waiting for ${Math.floor(waitSeconds / 60)} minutes and ${waitSeconds % 60} seconds.`);
+                logInfo(`URDS Auto Upload waiting for ${Math.floor(waitSeconds / 60)} minutes and ${waitSeconds % 60} seconds (random delay).`);
 
                 setTimeout(() => {
-                    logInfo(`URDS Auto Upload executing upload task`);
-                    MessageLog = false; 
-                    MessageWarn = false; 
-                    MessageError = false;
-                    let source = 000000000000;
-                    copyCsvFilesWithHeader(ws, source);
+                    if (currentStatus === 'on') {
+                        logInfo(`URDS Auto Upload executing upload task`);
+                        MessageLog = false; 
+                        MessageWarn = false; 
+                        MessageError = false;
+                        let source = 000000000000;
+                        copyCsvFilesWithHeader(ws, source);
+                    } else {
+                        logInfo("DEBUG: Status turned off before executing the scheduled upload task. Skipping upload.");
+                    }
                 }, waitSeconds * 1000);
             } else {
                 logInfo("URDS Auto Upload skipped: currentStatus is not 'on'.");
@@ -869,6 +874,8 @@ function scheduleTask() {
             if (currentStatus === 'on') {
                 clearInterval(intervalId); // Stop monitoring once the status is 'on'
                 executeTask();
+            } else {
+                logInfo("DEBUG: scheduleTask() - currentStatus still 'off', checking again in 5 seconds.");
             }
         }, 5000); // Check status every 5 seconds
 
@@ -877,7 +884,10 @@ function scheduleTask() {
 
 // Start the scheduled task
 if (URDSautoUpload === 'on' && currentStatus === 'on') {
+    logInfo('DEBUG: URDSautoUpload is on and currentStatus is on => scheduling daily task.');
     scheduleTask();
+} else {
+    logInfo('DEBUG: Automatic upload is off or currentStatus is off => No scheduling done.');
 }
 
 // Initialize connections after a delay
