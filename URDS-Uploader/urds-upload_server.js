@@ -1,8 +1,8 @@
 /////////////////////////////////////////////////////////////////////
 ///                                                               ///
-///  URDS UPLOADER SERVER SCRIPT FOR FM-DX-WEBSERVER (V1.0h BETA) ///
+///  URDS Uploader Server Script for FM-DX-Webserver (V1.1a)      ///
 ///                                                               ///
-///  by Highpoint                last update: 15.02.25            ///
+///  by Highpoint                last update: 18.02.25            ///
 ///                                                               ///
 ///  https://github.com/Highpoint2000/URDSupload                  ///
 ///                                                               ///
@@ -18,14 +18,14 @@ const configFilePath = path.join(__dirname, './../../plugins_configs/urds-upload
 
 // Default values for the configuration file
 const defaultConfig = {
-    URDSautoUpload: 'off',          // Set Auto Upload after 0:00 UTC 'on' or 'off'
-    CombineFiles: 'on',             // Combine all files before uploading / set it 'on' or 'off'/ default is 'on'
-    FMLIST_OM_ID: '',               // Enter your OM ID here, for example: FMLIST_OM_ID: '1234', if no OMID is entered under FMLIST INTEGRATION on the web server
-    FMLIST_EMAIL: '',               // Enter your EMAIL here, for example: FMLIST_EMAIL: 'xxx@xxx.com', if no email is entered under IDENTIFICATION & MAP on the web server or it is another email adress
-    ServerName: '',                 // Enter your RaspiID or another name for the server, if left blank the name will be taken from the web server
-    ServerDescription: '',          // Enter a comment or description for the server, if left blank the name will be taken from the web server
-    PublicationMode: 'public',      // Enter the publishing mode: 'public', 'owner' or 'restricted' (default: 'public')
-    OperatingMode: 'fixed'          // Enter 'mobile' or 'fixed' for stationary operation
+    URDSautoUpload: 'off',          // Enable auto upload after 0:00 UTC: 'on' or 'off'
+    CombineFiles: 'on',             // Combine all files before uploading; set to 'on' or 'off' (default is 'on')
+    FMLIST_OM_ID: '',               // Enter your OM ID here, for example: FMLIST_OM_ID: '1234'. If no OMID is entered under FMLIST INTEGRATION on the web server.
+    FMLIST_EMAIL: '',               // Enter your email here, for example: FMLIST_EMAIL: 'xxx@xxx.com'. If no email is entered under IDENTIFICATION & MAP on the web server or if a different email is used.
+    ServerName: '',                 // Enter your RaspiID or another name for the server. If left blank, the name will be taken from the web server.
+    ServerDescription: '',          // Enter a comment or description for the server. If left blank, the description will be taken from the web server.
+    PublicationMode: 'public',      // Publishing mode: 'public', 'owner' or 'restricted' (default: 'public')
+    OperatingMode: 'fixed'          // Operation mode: 'mobile' or 'fixed' for stationary operation
 };
 
 // Function to merge default config with existing config
@@ -96,6 +96,7 @@ const sentMessages = new Set();
 const { execSync } = require('child_process');
 const NewModules = ['axios', 'form-data', 'os'];
 
+// Check and install required modules if missing
 function checkAndInstallNewModules() {
     NewModules.forEach(module => {
         const modulePath = path.join(__dirname, './../../node_modules', module);
@@ -155,43 +156,43 @@ if (ValidEmailAddressTo === '') {
 
 if (!ServerName) {
     ServerName = encodeURIComponent(config.identification.tunerName)
-        .replace(/%20/g, ' '); // Encode and replace spaces with a space character
+        .replace(/%20/g, ' '); // Encode and replace encoded spaces with a space character
 }
 
 if (!ServerDescription) {
     ServerDescription = config.identification.tunerDesc
-        .replace(/%20/g, ' '); // Encode and replace spaces with a space character
+        .replace(/%20/g, ' '); // Encode and replace encoded spaces with a space character
 }
 
-// Read the plugin version from the client file
+// Read the plugin version from the uploader file
 let UploaderPluginVersion;
 const UploaderfilePath = path.join(__dirname, 'urds-upload.js');
 fs.readFile(UploaderfilePath, 'utf8', (err, data) => {
     if (err) {
-        console.error('URDS Upload Fehler beim Lesen der Datei:', err);
+        logError('URDS Upload error reading file:', err);
         return;
     }
     const versionMatch = data.match(/const\s+plugin_version\s*=\s*['"]([^'"]+)['"]/);
     if (versionMatch && versionMatch[1]) {
         UploaderPluginVersion = versionMatch[1];
     } else {
-        logError('URDS Upload Error! Plugin version nicht gefunden.');
+        logError('URDS Upload error! Plugin version not found.');
     }
 });
 
-// Read the plugin version from the client file
+// Read the plugin version from the scanner file
 let ScannerPluginVersion;
 const ScannerfilePath = path.join(__dirname, '..', 'Scanner', 'scanner.js');
 fs.readFile(ScannerfilePath, 'utf8', (err, data) => {
     if (err) {
-        console.error('URDS Upload Fehler beim Lesen der Scanner Datei:', err);
+        logError('URDS Upload error reading Scanner file:', err);
         return;
     }
     const versionMatch = data.match(/const\s+plugin_version\s*=\s*['"]([^'"]+)['"]/);
     if (versionMatch && versionMatch[1]) {
         ScannerPluginVersion = versionMatch[1];
     } else {
-        logError('URDS Upload Error! Scanner plugin version nicht gefunden.');
+        logError('URDS Upload error! Scanner plugin version not found.');
     }
 });
 
@@ -200,7 +201,7 @@ const logDir = path.join(__dirname, '../../web/logs');
 const uploadDir = path.join(__dirname, '../../web/logs/upload');
 const sentDir = path.join(__dirname, '../../web/logs/sent');
 
-// Function to check and create the directory if it doesn't exist
+// Function to check and create a directory if it doesn't exist
 function checkAndCreateDir(directory) {
   if (!fs.existsSync(directory)) {
     fs.mkdirSync(directory, { recursive: true });
@@ -212,6 +213,7 @@ function checkAndCreateDir(directory) {
 checkAndCreateDir(uploadDir);
 checkAndCreateDir(sentDir);
 
+// Create backup folder and move files with .backup extension
 function createBackupFolderAndMoveFiles() {
     // Path for the backup folder
     const backupDir = path.join(logDir, 'backup');
@@ -219,7 +221,7 @@ function createBackupFolderAndMoveFiles() {
     // Ensure the backup folder exists
     if (!fs.existsSync(backupDir)) {
         fs.mkdirSync(backupDir, { recursive: true });
-        logInfo(`URDS Upload created Backup folder`);
+        logInfo(`URDS Upload created backup folder`);
     }
 
     // Read files in the logDir folder
@@ -240,7 +242,7 @@ function createBackupFolderAndMoveFiles() {
     });
 
     if (filesMoved) {
-        logInfo(`URDS Upload have moved all *.backup files and removed their .backup extension`);
+        logInfo(`URDS Upload moved all *.backup files and removed their .backup extension`);
     }
 }
 
@@ -260,11 +262,11 @@ const createFMOverview = (filePath) => {
 
     const outputPath = `${filePath}.overview.txt`;
     fs.writeFileSync(outputPath, `Line count: ${lines.length}`);
-    //logInfo(`Overview saved to ${outputPath}.`);
+    // logInfo(`Overview saved to ${outputPath}.`);
 };
 
 const uploadFile = async (file) => {
-    //logInfo(`Trying to upload ${file} ..`);
+    // logInfo(`Attempting to upload ${file}...`);
     const ws = new WebSocket(externalWsUrl + '/data_plugins');
 
     try {
@@ -280,35 +282,35 @@ const uploadFile = async (file) => {
         if (response.data === 'Thank you!') {
 
             const fileName = path.basename(file);
-            logInfo(`URDS Upload => ${fileName} success. Moving to sent directory`);
+            logInfo(`URDS Upload => ${fileName} succeeded. Moving to sent directory`);
 
-            // Move the .gz file to the SENT directory
+            // Move the .gz file to the sent directory
             const gzTargetPath = path.join(sentDir, path.basename(file));
             if (fs.existsSync(file)) {
                 fs.renameSync(file, gzTargetPath);
-                //logInfo(`Gzipped file moved to ${sentDir}`);
+                // logInfo(`Gzipped file moved to ${sentDir}`);
             } else {
-                logWarn(`URDS Upload not found Gzipped file ${file}, cannot move.`);
+                logWarn(`URDS Upload could not find gzipped file ${file} to move.`);
             }
 
-            //logInfo(`Creating overview for ${gzTargetPath}`);
+            // logInfo(`Creating overview for ${gzTargetPath}`);
             createFMOverview(gzTargetPath);
 
-            // Move the corresponding .csv file to the SENT directory
+            // Move the corresponding .csv file to the sent directory
             const csvFilePath = file.replace('_upload.csv.gz', '_fm_rds.csv'); // Match _fm_rds for CSV files
             if (fs.existsSync(csvFilePath)) {
                 const csvTargetPath = path.join(sentDir, path.basename(csvFilePath));
                 fs.renameSync(csvFilePath, csvTargetPath);
-                //logInfo(`CSV file moved to ${sentDir}`);
+                // logInfo(`CSV file moved to ${sentDir}`);
             } else {
-                logWarn(`URDS Upload not found CSV file for ${file}.`);
+                logWarn(`URDS Upload could not find CSV file for ${file}.`);
             }
 
             // Mark to send WebSocket message once all files are processed
             MessageLog = true;
 
         } else {
-            logWarn(' URDS Upload => fail! keeping file for later upload.');
+            logWarn('URDS Upload => failed! Keeping file for later upload.');
             MessageWarn = true;
         }
     } catch (error) {
@@ -319,10 +321,10 @@ const uploadFile = async (file) => {
 };
 
 // Function to handle multiple file uploads
-const uploadAllFiles = async (ws,source) => {
+const uploadAllFiles = async (ws, source) => {
     const files = fs.readdirSync(uploadDir);
 
-    // DEBUG: Zeige gefundene Dateien
+    // DEBUG: Show found files
     logInfo(`DEBUG: uploadAllFiles() - Found ${files.length} items in uploadDir`);
 
     // Filter for .gz files
@@ -349,7 +351,7 @@ const uploadAllFiles = async (ws,source) => {
         } else if (MessageLog) {
             ws.send(JSON.stringify(createMessage(`ok`, source)));
         }
-        //logInfo("WebSocket message sent.");
+        // logInfo("WebSocket message sent.");
     }
 };
 
@@ -363,16 +365,16 @@ function countPicodesAndPSInfo(fileContent) {
 
         // Ensure there are enough columns
         if (columns.length > 14) {
-            const freq = columns[2].trim();    // 4th column (Index 3) for Frequency
-            const picode = columns[12].trim(); // 14th column (Index 13) for Picodes
-            const psInfo = columns[14].trim(); // 16th column (Index 15) for PS Info
+            const freq = columns[2].trim();    // 3rd column (index 2) for Frequency
+            const picode = columns[12].trim(); // 13th column (index 12) for Picodes
+            const psInfo = columns[14].trim(); // 15th column (index 14) for PS Info
 
             // Initialize if the frequency doesn't exist in the object
             if (!freqData[freq]) {
                 freqData[freq] = {
                     picodes: new Set(),  // Set for unique Picodes
                     validPsInfo: false,  // Track if a valid PS Info exists
-                    distinctPicode: false, // Track if picode RAW exists
+                    distinctPicode: false, // Track if distinct Picodes exist
                 };
             }
 
@@ -407,7 +409,7 @@ function countPicodesAndPSInfo(fileContent) {
         if (freqData[freq].validPsInfo) {
             psInfoCount += 1; // Count frequencies with at least one valid PS Info
         } else if (freqData[freq].distinctPicode) {
-            distinctPicodeCount += 1; // Count frequencies with invalid PS Info
+            distinctPicodeCount += 1; // Count frequencies with distinct Picodes
         }
     }
 
@@ -421,28 +423,28 @@ async function processFilesWithCombination(logDir, uploadDir, ws, source) {
 
     const backupDir = path.join(logDir, 'backup');
 
-    // Sicherstellen, dass der Backup-Ordner existiert
+    // Ensure that the backup folder exists
     if (!fs.existsSync(backupDir)) {
         fs.mkdirSync(backupDir, { recursive: true });
-        logInfo(`URDS Upload created Backup folder`);
+        logInfo(`URDS Upload created backup folder`);
     }
 
-    // Alle relevanten Dateien im Ordner filtern
+    // Filter all relevant files in the folder
     const filesToCombine = fs.readdirSync(logDir)
         .filter(file => file.endsWith('_fm_rds.csv') && !file.startsWith('SCANNER') && !file.startsWith('scan'))
         .map(file => {
             const filePath = path.join(logDir, file);
             const fileSize = fs.statSync(filePath).size;
 
-            // 0-KB-Dateien prüfen und löschen
+            // Check for 0-KB files and delete them
             if (fileSize === 0) {
                 try {
                     fs.unlinkSync(filePath);
                     logInfo(`URDS Upload deleted empty CSV file ${file}`);
                 } catch (error) {
-                    logError(`URDS Upload Error deleting file ${file}: ${error.message}`);
+                    logError(`URDS Upload error deleting file ${file}: ${error.message}`);
                 }
-                return null; // Datei nicht zur Verarbeitung hinzufügen
+                return null; // Do not add the file for processing
             }
 
             return {
@@ -450,7 +452,7 @@ async function processFilesWithCombination(logDir, uploadDir, ws, source) {
                 time: fs.statSync(filePath).mtime.getTime()
             };
         })
-        .filter(Boolean) // Null-Werte entfernen
+        .filter(Boolean) // Remove null values
         .sort((a, b) => a.time - b.time);
 
     if (filesToCombine.length > 1) {
@@ -460,18 +462,18 @@ async function processFilesWithCombination(logDir, uploadDir, ws, source) {
             const sanitizedContent = fileContent.split('\n').filter(line => line.trim() !== '').join('\n');
             combinedFileContent.push(sanitizedContent);
 
-            // Datei in den Backup-Ordner verschieben
+            // Move file to backup folder
             const backupPath = path.join(backupDir, `${file}`);
             fs.renameSync(filePath, backupPath);
             logInfo(`URDS Upload moved file ${file} to backup folder`);
         });
 
-        // Kombinierte Datei schreiben
+        // Write the combined file
         fs.writeFileSync(combinedFilePath, combinedFileContent.join('\n'), 'utf-8');
         logInfo(`URDS Upload combined ${filesToCombine.length} files into ${timestamp}_combined_fm_rds.csv`);
     } else {
-        // DEBUG: Info, wenn kein Kombinieren nötig/erfolgt
-        logInfo('DEBUG: No multiple files found to combine or only single file. Skipping combination.');
+        // DEBUG: Info when no combination is needed or performed
+        logInfo('DEBUG: No multiple files found to combine or only one file found. Skipping combination.');
     }
 }
 
@@ -481,14 +483,14 @@ function copyCsvFilesWithHeader(ws, source) {
     // Ensure the destination directories exist
     if (!fs.existsSync(uploadDir)) {
         fs.mkdirSync(uploadDir, { recursive: true });
-        logInfo(`URDS Upload created Directory ${uploadDir}`);
+        logInfo(`URDS Upload created directory ${uploadDir}`);
     }
     if (!fs.existsSync(sentDir)) {
         fs.mkdirSync(sentDir, { recursive: true });
-        logInfo(`URDS Upload created Directory ${sentDir}`);
+        logInfo(`URDS Upload created directory ${sentDir}`);
     }
 
-    // Bei "CombineFiles" erst versuchen zu kombinieren
+    // If "CombineFiles" is on, attempt to combine first
     if (CombineFiles === 'on') {
         processFilesWithCombination(logDir, uploadDir, ws, source);
     }
@@ -506,7 +508,7 @@ function copyCsvFilesWithHeader(ws, source) {
         processUploadDirFile(file, filesToUpload, pendingGzCreations, ws, source);
     });
 
-    // DEBUG: Log welche Dateien wir jetzt hochladen möchten
+    // DEBUG: Log which files are queued for upload
     logInfo(`DEBUG: Found ${filesToUpload.size} .gz files queued for upload (after GZ creation).`);
 
     // Monitor completion of .gz creations and trigger upload
@@ -516,13 +518,13 @@ function copyCsvFilesWithHeader(ws, source) {
             logInfo('DEBUG: All pending .gz creations finished.');
 
             if (filesToUpload.size > 0) {
-                uploadAllFiles(ws, source); // Only upload once
+                uploadAllFiles(ws, source); // Upload once all files are ready
             } else {
-                logInfo('URDS Upload have no files to upload');
+                logInfo('URDS Upload has no files to upload');
                 ws.send(JSON.stringify(createMessage(`no`, source)));
             }
         } else {
-            // DEBUG: Log, dass wir noch warten
+            // DEBUG: Log that we are still waiting
             logInfo(`DEBUG: Waiting for .gz creation to finish. Remaining: ${pendingGzCreations.size}`);
         }
     }, 500); // Check every 500ms
@@ -555,10 +557,10 @@ async function processFile(file, baseDir, filesToUpload, pendingGzCreations, ws,
     // Ensure the backup folder exists
     if (!fs.existsSync(backupDir)) {
         fs.mkdirSync(backupDir, { recursive: true });
-        logInfo(`URDS Upload created Backup folder`);
+        logInfo(`URDS Upload created backup folder`);
     }
 
-    // Check if file name ends with '_fm_rds.csv' and ignore 'SCANNER*.csv'
+    // Check if filename ends with '_fm_rds.csv' and ignore files starting with 'SCANNER' or 'scan'
     if (!file.endsWith('_fm_rds.csv') || file.startsWith('SCANNER') || file.startsWith('scan')) {
         return;
     }
@@ -571,7 +573,7 @@ async function processFile(file, baseDir, filesToUpload, pendingGzCreations, ws,
                 fs.unlinkSync(filePath);
                 logInfo(`URDS Upload deleted empty CSV file ${file}`);
             } catch (error) {
-                logError(`URDS Upload Error deleting file ${file}: ${error.message}`);
+                logError(`URDS Upload error deleting file ${file}: ${error.message}`);
             }
             return; // Exit early after deletion
         }
@@ -603,10 +605,10 @@ async function processFile(file, baseDir, filesToUpload, pendingGzCreations, ws,
 
             fs.writeFileSync(uploadFilePath, newContent);
 
-            // Verschieben in den Backup-Ordner (falls gewünscht)  
+            // Move original file to the backup folder
             const backupPath = path.join(backupDir, file);
             if (!fs.existsSync(filePath)) {
-                //logInfo(`Source file ${filePath} does not exist, skipping move.`);
+                // logInfo(`Source file ${filePath} does not exist, skipping move.`);
                 return;
             }
 
@@ -634,7 +636,7 @@ function processUploadDirFile(file, filesToUpload, pendingGzCreations, ws, sourc
 
     if (file.endsWith('_fm_rds.csv') && fs.existsSync(gzFilePath)) {
         filesToUpload.add(gzFileName); // Both CSV and .gz exist, mark for upload
-        //logInfo(`Marking ${gzFileName} for upload.`);
+        // logInfo(`Marking ${gzFileName} for upload.`);
     } else if (file.endsWith('.csv') && !fs.existsSync(gzFilePath)) {
         createGzFile(filePath, gzFilePath, filesToUpload, pendingGzCreations, gzFileName, ws, source);
     }
@@ -658,7 +660,7 @@ function createGzFile(inputPath, outputPath, filesToUpload, pendingGzCreations, 
         pendingGzCreations.delete(inputPath);
         if (fs.existsSync(outputPath)) {
             filesToUpload.add(gzFileName); // Mark file as ready for upload
-            logInfo(`URDS Upload created Gzipped file ${gzFileName}`);
+            logInfo(`URDS Upload created gzipped file ${gzFileName}`);
         }
     });
 
@@ -698,7 +700,7 @@ function sendWebSocketNotification(status, subject, message, source) {
         try {
             data_pluginsWs.send(JSON.stringify(notification));
         } catch (error) {
-            logError("URDS Upload Error sending WebSocket notification:", error);
+            logError("URDS Upload error sending WebSocket notification:", error);
         }
     } else {
         logError("URDS Upload data_plugins WebSocket is not open or not defined.");
@@ -708,7 +710,7 @@ function sendWebSocketNotification(status, subject, message, source) {
 // Connect to the main WebSocket server
 function connectToWebSocket() {
     if (!ValidEmailAddressTo.includes('@')) {
-        logError("Email Address not set or invalid format! URDS Upload not started.");
+        logError("Email address not set or invalid format! URDS Upload not started.");
         return;
     }
 
@@ -744,9 +746,9 @@ function connectToWebSocket() {
 // Log broadcast information based on current status
 function logBroadcastInfo() {
     if (currentStatus === 'on' && URDSautoUpload === 'on') {
-        logInfo(`URDS Upload service are turned on`);
+        logInfo(`URDS Upload service is turned on`);
     } else {
-        logInfo(`URDS Upload service are turned off`);
+        logInfo(`URDS Upload service is turned off`);
     }
 }
 
@@ -760,12 +762,12 @@ function handleWebSocketMessage(data, ws) {
             handleURDSMessage(message, ws);
         }
     } catch (error) {
-        logError('URDS Upload Error processing WebSocket message:', error);
+        logError('URDS Upload error processing WebSocket message:', error);
     }
 }
 
 if (CombineFiles === 'on') {
-    logInfo(`URDS Upload "combine all files function" is on`);
+    logInfo(`URDS Upload "combine all files" function is on`);
 }
 
 // Handle URDSupload specific WebSocket messages
@@ -778,20 +780,20 @@ function handleURDSMessage(message, ws) {
     if (status === 'request') {
         if (currentStatus === 'on') {
             ws.send(JSON.stringify(createMessage('on', message.source)));
-            logInfo(`URDS Upload responding with "Autoupload on"`);
+            logInfo(`URDS Upload responding with "Auto upload on"`);
             currentStatus = 'on';
         } else if (currentStatus === 'off') {
             ws.send(JSON.stringify(createMessage('off', message.source)));
-            logInfo(`URDS Upload responding with "Autoupload off"`);
+            logInfo(`URDS Upload responding with "Auto upload off"`);
             currentStatus = 'off';
         }
     } else if (status === 'on') {
         ws.send(JSON.stringify(createMessage('on', message.source)));
-        logInfo(`URDS Upload responding with "Autoupload on"`);
+        logInfo(`URDS Upload responding with "Auto upload on"`);
         currentStatus = 'on';
     } else if (status === 'off') {
         ws.send(JSON.stringify(createMessage('off', message.source)));
-        logInfo(`URDS Upload responding with "Autoupload off"`);
+        logInfo(`URDS Upload responding with "Auto upload off"`);
         currentStatus = 'off';
     } else if (status === 'start') {
         if (now - lastStartTimestamp >= 5000) {
@@ -827,62 +829,37 @@ function setupdata_pluginsWebSocket() {
 function scheduleTask() {
     // Calculate the remaining time until midnight UTC
     const now = new Date();
-    const midnightUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0));
-    let timeUntilMidnight = midnightUTC - now;
+    const midnightUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0));
+    const timeUntilMidnight = midnightUTC - now;
 
-    // If it's already past midnight UTC, calculate time until the next midnight
-    if (timeUntilMidnight < 0) {
-        timeUntilMidnight += 24 * 60 * 60 * 1000; // Add 24 hours in milliseconds
-    }
+    logInfo(`Scheduled auto upload in ${Math.floor(timeUntilMidnight / 1000)} seconds.`);
 
-    logInfo(`DEBUG: scheduleTask() - Time until next midnight (UTC): ${timeUntilMidnight / 1000} seconds`);
-
-    logInfo(`URDS Auto Upload scheduled to start at UTC midnight.`);
-
-    // Wait until midnight UTC
     setTimeout(() => {
-        logInfo("URDS Upload running random delay function...");
+        logInfo("Midnight reached, preparing upload...");
 
-        // Function to check status and execute the upload task
-        const executeTask = () => {
+        // Delay the upload with a random delay as before
+        const MAX_MINUTES = 120;
+        const waitSeconds = Math.floor(Math.random() * MAX_MINUTES * 60);
+        logInfo(`Waiting an additional ${Math.floor(waitSeconds / 60)} minutes and ${waitSeconds % 60} seconds.`);
+
+        setTimeout(() => {
             if (currentStatus === 'on') {
-                // Execute the function with a maximum wait time of 120 minutes
-                const MAX_MINUTES = 120;
-                const waitSeconds = Math.floor(Math.random() * MAX_MINUTES * 60);
-
-                logInfo(`URDS Auto Upload waiting for ${Math.floor(waitSeconds / 60)} minutes and ${waitSeconds % 60} seconds (random delay).`);
-
-                setTimeout(() => {
-                    if (currentStatus === 'on') {
-                        logInfo(`URDS Auto Upload executing upload task`);
-                        MessageLog = false; 
-                        MessageWarn = false; 
-                        MessageError = false;
-                        let source = 000000000000;
-                        copyCsvFilesWithHeader(ws, source);
-                    } else {
-                        logInfo("DEBUG: Status turned off before executing the scheduled upload task. Skipping upload.");
-                    }
-                }, waitSeconds * 1000);
+                logInfo("Executing scheduled upload task.");
+                MessageLog = false;
+                MessageWarn = false;
+                MessageError = false;
+                let source = "000000000000";
+                copyCsvFilesWithHeader(ws, source);
             } else {
-                logInfo("URDS Auto Upload skipped: currentStatus is not 'on'.");
+                logInfo("Upload skipped because currentStatus is not 'on'.");
             }
-        };
-
-        // Monitor the status and execute when appropriate
-        const intervalId = setInterval(() => {
-            if (currentStatus === 'on') {
-                clearInterval(intervalId); // Stop monitoring once the status is 'on'
-                executeTask();
-            } else {
-                logInfo("DEBUG: scheduleTask() - currentStatus still 'off', checking again in 5 seconds.");
-            }
-        }, 5000); // Check status every 5 seconds
-
+            // Reschedule for the next day after upload (or skip)
+            scheduleTask();
+        }, waitSeconds * 1000);
     }, timeUntilMidnight);
 }
 
-// Start the scheduled task
+// Start the scheduled task if auto upload is enabled
 if (URDSautoUpload === 'on' && currentStatus === 'on') {
     logInfo('DEBUG: URDSautoUpload is on and currentStatus is on => scheduling daily task.');
     scheduleTask();
