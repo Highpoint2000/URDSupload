@@ -1,8 +1,8 @@
 /////////////////////////////////////////////////////////////////////
 ///                                                               ///
-///  URDS Uploader Server Script for FM-DX-Webserver (V1.1a)      ///
+///  URDS Uploader Server Script for FM-DX-Webserver (V1.1b)      ///
 ///                                                               ///
-///  by Highpoint                last update: 18.02.25            ///
+///  by Highpoint                last update: 06.03.25            ///
 ///                                                               ///
 ///  https://github.com/Highpoint2000/URDSupload                  ///
 ///                                                               ///
