@@ -9,7 +9,7 @@
   ///                                                               ///
   /////////////////////////////////////////////////////////////////////
 
-  ///  This plugin only works from web server version 1.3.5 !!!
+  ///  This plugin only works with web server version 1.3.5 !!!
 
   const updateInfo = true; // Enable or disable version check
 
@@ -37,7 +37,7 @@
 
   let checkSuccessTimer;
 
-  // Daten von WebserverURL und WebserverPORT aus der aktuellen URL
+  // Get data for WebserverURL and WebserverPORT from the current URL
   const currentURL = new URL(window.location.href);
   const WebserverURL = currentURL.hostname;
   const WebserverPath = currentURL.pathname.replace(/setup/g, '');
@@ -159,95 +159,94 @@
   }
 
   // Function to handle WebSocket messages
- function handleWebSocketMessage(event) {
-  try {
-    const eventData = JSON.parse(event.data);
-    // console.log('Empfangene Nachricht:', eventData);
+  function handleWebSocketMessage(event) {
+    try {
+      const eventData = JSON.parse(event.data);
+      // console.log('Received message:', eventData);
 
-    // Prüfen, ob es sich um eine URDSupload-Nachricht handelt und der Absender nicht unser eigener Session-ID ist
-    if (eventData.type === 'URDSupload' && eventData.source !== sessionId) {
-      // Überprüfen, ob der Button im DOM existiert
-      const btn = document.getElementById('URDSupload-on-off');
-      if (!btn) {
-        // console.warn('Button noch nicht vorhanden, verzögere Statusaktualisierung.');
-        // Wenn der Button noch nicht existiert, wird die Verarbeitung der Nachricht um 500 ms verzögert
-        setTimeout(() => handleWebSocketMessage(event), 500);
-        return;
-      }
-
-      // Optional: Throttling, um Mehrfachverarbeitungen zu vermeiden
-      const currentTime = Date.now();
-      if (
-        !handleWebSocketMessage.lastProcessedTime ||
-        currentTime - handleWebSocketMessage.lastProcessedTime >= 1000
-      ) {
-        handleWebSocketMessage.lastProcessedTime = currentTime;
-        const { status } = eventData.value;
-        switch (status) {
-          case 'success':
-            if (eventData.target === sessionId) {
-              if (status === 'on') {
-                sendToast('success important', 'URDS Upload', 'URDSupload activated', false, false);
-                console.log("Server response: URDS Upload activated");
-              } else {
-                sendToast('error', 'URDS Upload', 'no services are configured!', false, false);
-              }
-            }
-            break;
-          case 'ok':
-            console.log('URDS Upload started successfully');
-            if (isTuneAuthenticated) {
-              sendToast('success important', 'URDS Upload', 'successfully!', false, false);
-            }
-            break;
-          case 'warn':
-            console.warn("URDS Upload started with errors");
-            sendToast('warning', 'URDS Upload', 'Warning! Started with errors!', false, false);
-            break;
-          case 'error':
-            console.error("URDS Upload request failed.");
-            sendToast('error important', 'URDS Upload', 'Error! Failed to Upload!', false, false);
-            break;
-          case 'no':
-            console.warn("URDS Upload have no files to upload.");
-            sendToast('warning', 'URDS Upload', 'No files to upload!', false, false);
-            break;
-          case 'fail':
-            console.error("URDS Upload failed to create gzipped file.");
-            sendToast('error important', 'URDS Upload', 'Failed to create gzipped file!', false, false);
-            break;
-          case 'on':
-          case 'off':
-            // Status 'on' oder 'off' wird zum Umschalten des Button-Status genutzt
-            URDSActive = status === 'on';
-            setButtonStatus(URDSActive);
-            if (isTuneAuthenticated && (eventData.target === '000000000000' || eventData.target === sessionId)) {
-              const StatusMessage = `URDS Upload ${URDSActive ? 'activated' : 'deactivated'}`;
-              if (status === 'on') {
-                console.log(StatusMessage);
-                sendToast('info', 'URDS Upload', 'Autoupload activated', false, false);
-              } else {
-                console.log(StatusMessage);
-                sendToast('info', 'URDS Upload', 'Autoupload deactivated', false, false);
-              }
-            }
-            break;
-          default:
-            console.warn('Unbekannter Status empfangen:', status);
+      // Check if this is a URDSupload message and the sender is not our own session ID
+      if (eventData.type === 'URDSupload' && eventData.source !== sessionId) {
+        // Check if the button exists in the DOM
+        const btn = document.getElementById('URDSupload-on-off');
+        if (!btn) {
+          // console.warn('Button not yet present, delaying status update.');
+          // If the button is not yet present, delay processing the message by 500 ms
+          setTimeout(() => handleWebSocketMessage(event), 500);
+          return;
         }
-      } else {
-        console.log("Throttling: Ignored message due to time limit.");
+
+        // Optional: Throttling to prevent multiple processing events
+        const currentTime = Date.now();
+        if (
+          !handleWebSocketMessage.lastProcessedTime ||
+          currentTime - handleWebSocketMessage.lastProcessedTime >= 1000
+        ) {
+          handleWebSocketMessage.lastProcessedTime = currentTime;
+          const { status } = eventData.value;
+          switch (status) {
+            case 'success':
+              if (eventData.target === sessionId) {
+                if (status === 'on') {
+                  sendToast('success important', 'URDS Upload', 'URDSupload activated', false, false);
+                  console.log("Server response: URDS Upload activated");
+                } else {
+                  sendToast('error', 'URDS Upload', 'no services are configured!', false, false);
+                }
+              }
+              break;
+            case 'ok':
+              console.log('URDS Upload started successfully');
+              if (isTuneAuthenticated) {
+                sendToast('success important', 'URDS Upload', 'successfully!', false, false);
+              }
+              break;
+            case 'warn':
+              console.warn("URDS Upload started with errors");
+              sendToast('warning', 'URDS Upload', 'Warning! Started with errors!', false, false);
+              break;
+            case 'error':
+              console.error("URDS Upload request failed.");
+              sendToast('error important', 'URDS Upload', 'Error! Failed to Upload!', false, false);
+              break;
+            case 'no':
+              console.warn("URDS Upload has no files to upload.");
+              sendToast('warning', 'URDS Upload', 'No files to upload!', false, false);
+              break;
+            case 'fail':
+              console.error("URDS Upload failed to create gzipped file.");
+              sendToast('error important', 'URDS Upload', 'Failed to create gzipped file!', false, false);
+              break;
+            case 'on':
+            case 'off':
+              // Status 'on' or 'off' is used to toggle the button status
+              URDSActive = status === 'on';
+              setButtonStatus(URDSActive);
+              if (isTuneAuthenticated && (eventData.target === '000000000000' || eventData.target === sessionId)) {
+                const StatusMessage = `URDS Upload ${URDSActive ? 'activated' : 'deactivated'}`;
+                if (status === 'on') {
+                  console.log(StatusMessage);
+                  sendToast('info', 'URDS Upload', 'Autoupload activated', false, false);
+                } else {
+                  console.log(StatusMessage);
+                  sendToast('info', 'URDS Upload', 'Autoupload deactivated', false, false);
+                }
+              }
+              break;
+            default:
+              console.warn('Unknown status received:', status);
+          }
+        } else {
+          console.log("Throttling: Ignored message due to time limit.");
+        }
       }
-    }
 
-    if (checkSuccessTimer) {
-      clearTimeout(checkSuccessTimer);
+      if (checkSuccessTimer) {
+        clearTimeout(checkSuccessTimer);
+      }
+    } catch (error) {
+      console.error("Error handling WebSocket message:", error);
     }
-  } catch (error) {
-    console.error("Error handling WebSocket message:", error);
   }
-}
-
 
   // Send an initial WebSocket message with the session ID
   async function sendInitialWebSocketMessage() {
@@ -269,25 +268,24 @@
   }
 
   // Update button status based on whether alerts are active
-function setButtonStatus(isActive) {
-  const btn = document.getElementById('URDSupload-on-off');
-  if (btn) {
-    // console.log('Aktualisiere Button-Status:', isActive);
-    if (isActive) {
-      btn.classList.add('active');
+  function setButtonStatus(isActive) {
+    const btn = document.getElementById('URDSupload-on-off');
+    if (btn) {
+      // console.log('Updating button status:', isActive);
+      if (isActive) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+      // console.log(`Button status set to: ${isActive ? 'Active' : 'Inactive'}`);
+      URDSActive = isActive;
     } else {
-      btn.classList.remove('active');
+      console.error('Button not found!');
     }
-    // console.log(`Button status set to: ${isActive ? 'Active' : 'Inactive'}`);
-    URDSActive = isActive;
-  } else {
-    console.error('Button nicht gefunden!');
   }
-}
-
 
   // ───────────────────────────────────────────────────────────────
-  // Neue Button-Erstellung inklusive Migration der Event-Listener
+  // New button creation including migration of event listeners
   function createButton(buttonId) {
     (function waitForFunction() {
       const maxWaitTime = 10000;
@@ -296,7 +294,7 @@ function setButtonStatus(isActive) {
       const observer = new MutationObserver((mutationsList, observer) => {
         if (typeof addIconToPluginPanel === 'function') {
           observer.disconnect();
-          // Button über das Plugin-Panel erstellen
+          // Create button via the Plugin Panel
           addIconToPluginPanel(
             buttonId,
             "URDS",
@@ -309,7 +307,7 @@ function setButtonStatus(isActive) {
           const buttonObserver = new MutationObserver(() => {
             const $pluginButton = $(`#${buttonId}`);
             if ($pluginButton.length > 0) {
-              // Event-Listener hinzufügen
+              // Add event listeners
               $pluginButton.on('mousedown', startPressTimer);
               $pluginButton.on('mouseup mouseleave', cancelPressTimer);
               buttonObserver.disconnect();
@@ -329,34 +327,34 @@ function setButtonStatus(isActive) {
       }, maxWaitTime);
     })();
 
-    // Zusätzliche CSS-Anpassungen für den neuen Button
+    // Additional CSS adjustments for the new button
     const aURDSuploadCss = `
-	#${buttonId}:hover {
-		color: var(--color-5);
-		filter: brightness(120%);
-	}
-	#${buttonId}.active {
-		background-color: var(--color-2) !important;
-		filter: brightness(120%);
-	}
-	`;
+    #${buttonId}:hover {
+      color: var(--color-5);
+      filter: brightness(120%);
+    }
+    #${buttonId}.active {
+      background-color: var(--color-2) !important;
+      filter: brightness(120%);
+    }
+    `;
     $("<style>")
       .prop("type", "text/css")
       .html(aURDSuploadCss)
       .appendTo("head");
   }
 
-  // Startet den Press-Timer zur Erkennung eines langen Drucks
+  // Start the press timer to detect a long press
   function startPressTimer() {
     buttonPressStarted = Date.now();
     pressTimer = setTimeout(() => {
-      // Bei langem Druck den Status umschalten
+      // On long press, toggle the status
       toggleAlert();
       buttonPressStarted = null;
-    }, 1000); // 1 Sekunde als Schwelle
+    }, 1000); // 1 second threshold
   }
 
-  // Bricht den Press-Timer ab und führt bei kurzem Druck den Upload aus
+  // Cancel the press timer and initiate upload on short press
   function cancelPressTimer() {
     clearTimeout(pressTimer);
     if (buttonPressStarted) {
@@ -365,7 +363,7 @@ function setButtonStatus(isActive) {
     buttonPressStarted = null;
   }
 
-  // Startet den Upload
+  // Start the upload
   async function URDSstartUpload() {
     if (!isTuneAuthenticated) {
       sendToast(
@@ -402,7 +400,7 @@ function setButtonStatus(isActive) {
     }
   }
 
-  // Umschalten des Alert-Status und Aktualisierung via WebSocket
+  // Toggle alert status and update via WebSocket
   async function toggleAlert() {
     if (!isTuneAuthenticated) {
       sendToast(
@@ -435,7 +433,7 @@ function setButtonStatus(isActive) {
     }
   }
 
-  // Prüft, ob der Administrator angemeldet ist
+  // Check if the administrator is logged in
   function checkAdminMode() {
     const bodyText = document.body.textContent || document.body.innerText;
     isTuneAuthenticated =
@@ -448,11 +446,11 @@ function setButtonStatus(isActive) {
     );
   }
 
-  // Initialisierung nach DOM-Load
+  // Initialization after DOM load
   document.addEventListener('DOMContentLoaded', () => {
     setupSendSocket();
     checkAdminMode();
-    // Neuen Button erstellen
+    // Create the new button
     createButton('URDSupload-on-off');
   });
 
