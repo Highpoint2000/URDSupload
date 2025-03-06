@@ -6,7 +6,7 @@ This plugin provides automaticly and manual upload functions for the scanner plu
 
 ## Version 1.1a (only works from web server version 1.3.5!!!)
 
-- Problem with repeated auto upload at night solved
+- Active display of the URDS button corrected
 
 ## Installation notes:
 
@@ -42,6 +42,10 @@ The following variables can be changed in the urds-upload.json:
 - Processing on the FMLIST server takes different amounts of time and only takes place if the OMID and email address match the FMLIST account details 
   
 ## History: 
+
+### Version 1.1a (only works from web server version 1.3.5!!!)
+
+- Problem with repeated auto upload at night solved
 
 ### Version 1.1 (only works from web server version 1.3.5!!!)
 
