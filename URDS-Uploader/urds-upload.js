@@ -1,9 +1,9 @@
 (() => {
   /////////////////////////////////////////////////////////////////////
   ///                                                               ///
-  ///  URDS UPLOADER CLIENT SCRIPT FOR FM-DX-WEBSERVER (V1.1b)      ///
+  ///  URDS UPLOADER CLIENT SCRIPT FOR FM-DX-WEBSERVER (V1.1c)      ///
   ///                                                               ///
-  ///  by Highpoint                last update: 06.03.25            ///
+  ///  by Highpoint                last update: 23.06.25            ///
   ///                                                               ///
   ///  https://github.com/Highpoint2000/URDSupload                  ///
   ///                                                               ///
@@ -11,14 +11,17 @@
 
   ///  This plugin only works with web server version 1.3.5 !!!
 
-  const updateInfo = true; // Enable or disable version check
+  // Enable or disable version check
+  const pluginSetupOnlyNotify = true;
+  const CHECK_FOR_UPDATES = true;
 
   /////////////////////////////////////////////////////////////////////
 
-  const plugin_version = '1.1b';
-  const plugin_path = 'https://raw.githubusercontent.com/highpoint2000/URDSupload/';
-  const plugin_JSfile = 'main/URDS-Uploader/urds-upload.js';
-  const plugin_name = 'URDS Uploader';
+  const pluginVersion = '1.1c'; 
+  const pluginName = "URDS Uploader";
+  const pluginHomepageUrl = "https://github.com/Highpoint2000/URDSupload/releases";
+  const pluginUpdateUrl = "https://raw.githubusercontent.com/highpoint2000/URDSupload/main/URDS-Uploader/urds-upload.js";
+
 
   let wsSendSocket = null; // Global variable for WebSocket connection
   let URDSautoUpload;
@@ -26,7 +29,6 @@
   let pressTimer;
   let buttonPressStarted = null; // Timestamp for button press start
   var isTuneAuthenticated = false;
-  const PluginUpdateKey = `${plugin_name}_lastUpdateNotification`; // Unique key for localStorage
 
   // Generate a random 12-digit session ID to replace the IP address
   let sessionId = Math.floor(Math.random() * 1e12)
@@ -61,77 +63,97 @@
     return true;
   }
 
-  // Function to check plugin version
-  function checkplugin_version() {
-    fetch(`${plugin_path}${plugin_JSfile}`)
-      .then((response) => response.text())
-      .then((script) => {
-        const plugin_versionMatch = script.match(
-          /const plugin_version = '([\d.]+[a-z]*)?';/
-        );
-        if (!plugin_versionMatch) {
-          console.error(`${plugin_name}: Plugin version could not be found`);
-          return;
-        }
+  // Show update notification only on /setup if setupOnly is true
+function checkUpdate(setupOnly, pluginName, urlUpdateLink, urlFetchLink) {
+    if (setupOnly && window.location.pathname !== '/setup') return;
 
-        const externalplugin_version = plugin_versionMatch[1];
+    let pluginVersionCheck = typeof pluginVersion !== 'undefined' ? pluginVersion : typeof pluginVersion !== 'undefined' ? pluginVersion : typeof pluginVersion !== 'undefined' ? pluginVersion : 'Unknown';
 
-        function compareVersions(local, remote) {
-          const parseVersion = (version) =>
-            version
-              .split(/(\d+|[a-z]+)/i)
-              .filter(Boolean)
-              .map((part) => (isNaN(part) ? part : parseInt(part, 10)));
-
-          const localParts = parseVersion(local);
-          const remoteParts = parseVersion(remote);
-
-          for (
-            let i = 0;
-            i < Math.max(localParts.length, remoteParts.length);
-            i++
-          ) {
-            const localPart = localParts[i] || 0;
-            const remotePart = remoteParts[i] || 0;
-
-            if (typeof localPart === 'number' && typeof remotePart === 'number') {
-              if (localPart > remotePart) return 1;
-              if (localPart < remotePart) return -1;
-            } else if (
-              typeof localPart === 'string' &&
-              typeof remotePart === 'string'
-            ) {
-              if (localPart > remotePart) return 1;
-              if (localPart < remotePart) return -1;
-            } else {
-              return typeof localPart === 'number' ? -1 : 1;
+    // Fetch the plugin file and extract version
+    async function fetchFirstLine() {
+        try {
+            const response = await fetch(urlFetchLink);
+            if (!response.ok) {
+                throw new Error(`[${pluginName}] update check HTTP error! status: ${response.status}`);
             }
-          }
-          return 0;
-        }
 
-        const comparisonResult = compareVersions(plugin_version, externalplugin_version);
-        if (comparisonResult === 1) {
-          console.log(`${plugin_name}: The local version is newer than the plugin version.`);
-        } else if (comparisonResult === -1) {
-          if (shouldShowNotification()) {
-            console.log(`${plugin_name}: Plugin update available: ${plugin_version} -> ${externalplugin_version}`);
-            sendToast(
-              'warning important',
-              plugin_name,
-              `Update available:<br>${plugin_version} -> ${externalplugin_version}`,
-              false,
-              false
-            );
-          }
-        } else {
-          console.log(`${plugin_name}: The local version matches the plugin version.`);
+            const text = await response.text();
+            const lines = text.split('\n');
+            let version;
+
+            if (lines.length > 2) {
+				// Try to match any of: pluginVersion, plugin_version, PLUGIN_VERSION
+				const versionLine = lines.find(line =>
+					/const\s+(pluginVersion|plugin_version|PLUGIN_VERSION)\s*=/.test(line)
+				);
+				if (versionLine) {
+					const match = versionLine.match(/const\s+(?:pluginVersion|plugin_version|PLUGIN_VERSION)\s*=\s*['"]([^'"]+)['"]/);
+					if (match) {
+						version = match[1];
+					}
+				}
+            }
+
+            if (!version) {
+                const firstLine = lines[0].trim();
+                version = /^\d/.test(firstLine) ? firstLine : "Unknown";
+            }
+
+            return version;
+        } catch (error) {
+            console.error(`[${pluginName}] error fetching file:`, error);
+            return null;
         }
-      })
-      .catch((error) => {
-        console.error(`${plugin_name}: Error fetching the plugin script:`, error);
-      });
-  }
+    }
+
+    // Show update info in the setup UI
+    function setupNotify(pluginVersionCheck, newVersion, pluginName, urlUpdateLink) {
+        if (window.location.pathname === '/setup') {
+            const pluginSettings = document.getElementById('plugin-settings');
+            if (pluginSettings) {
+                const currentText = pluginSettings.textContent.trim();
+                const newText = `<a href="${urlUpdateLink}" target="_blank">[${pluginName}] Update available: ${pluginVersionCheck} → ${newVersion}</a><br>`;
+                if (currentText === 'No plugin settings are available.') {
+                    pluginSettings.innerHTML = newText;
+                } else {
+                    pluginSettings.innerHTML += ' ' + newText;
+                }
+            }
+
+            // Optional: Red dot on plugin icon
+            const updateIcon = document.querySelector('.wrapper-outer #navigation .sidenav-content .fa-puzzle-piece') || document.querySelector('.wrapper-outer .sidenav-content') || document.querySelector('.sidenav-content');
+            if (updateIcon) {
+                const redDot = document.createElement('span');
+                redDot.style.display = 'block';
+                redDot.style.width = '12px';
+                redDot.style.height = '12px';
+                redDot.style.borderRadius = '50%';
+                redDot.style.backgroundColor = '#FE0830';
+                redDot.style.marginLeft = '82px';
+                redDot.style.marginTop = '-12px';
+                updateIcon.appendChild(redDot);
+            }
+        }
+    }
+
+    // Perform the version check
+    fetchFirstLine().then(newVersion => {
+        if (newVersion) {
+            if (newVersion !== pluginVersionCheck) {
+                let updateConsoleText = "There is a new version of this plugin available";
+                console.log(`[${pluginName}] ${updateConsoleText}`);
+                setupNotify(pluginVersionCheck, newVersion, pluginName, urlUpdateLink);
+                // Optionally, also toast notification:
+                if (typeof sendToast === 'function') {
+                    sendToast('warning important', pluginName, `Update available:<br>${pluginVersionCheck} → ${newVersion}`, false, false);
+                }
+            }
+        }
+    });
+}
+
+// Run the update check if enabled
+if (CHECK_FOR_UPDATES) checkUpdate(pluginSetupOnlyNotify, pluginName, pluginHomepageUrl, pluginUpdateUrl);
 
   // Function to set up WebSocket connection for sending messages
   async function setupSendSocket() {
@@ -300,7 +322,7 @@
             "URDS",
             "solid",
             "upload",
-            `Plugin Version: ${plugin_version}`
+            `Plugin Version: ${pluginVersion}`
           );
           functionFound = true;
 
@@ -453,11 +475,5 @@
     // Create the new button
     createButton('URDSupload-on-off');
   });
-
-  setTimeout(() => {
-    if (updateInfo && isTuneAuthenticated) {
-      checkplugin_version();
-    }
-  }, 200);
 
 })();

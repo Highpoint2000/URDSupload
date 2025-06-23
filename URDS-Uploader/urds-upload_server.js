@@ -1,8 +1,8 @@
 /////////////////////////////////////////////////////////////////////
 ///                                                               ///
-///  URDS Uploader Server Script for FM-DX-Webserver (V1.1b)      ///
+///  URDS Uploader Server Script for FM-DX-Webserver (V1.1c)      ///
 ///                                                               ///
-///  by Highpoint                last update: 06.03.25            ///
+///  by Highpoint                last update: 23.06.25            ///
 ///                                                               ///
 ///  https://github.com/Highpoint2000/URDSupload                  ///
 ///                                                               ///
@@ -172,7 +172,9 @@ fs.readFile(UploaderfilePath, 'utf8', (err, data) => {
         logError('URDS Upload error reading file:', err);
         return;
     }
-    const versionMatch = data.match(/const\s+plugin_version\s*=\s*['"]([^'"]+)['"]/);
+    const versionMatch = data.match(
+        /const\s+(?:pluginVersion|plugin_version|PLUGIN_VERSION)\s*=\s*['"]([^'"]+)['"]/
+    );
     if (versionMatch && versionMatch[1]) {
         UploaderPluginVersion = versionMatch[1];
     } else {
@@ -188,7 +190,10 @@ fs.readFile(ScannerfilePath, 'utf8', (err, data) => {
         logError('URDS Upload error reading Scanner file:', err);
         return;
     }
-    const versionMatch = data.match(/const\s+plugin_version\s*=\s*['"]([^'"]+)['"]/);
+    const versionMatch = data.match(
+        /const\s+(?:pluginVersion|plugin_version|PLUGIN_VERSION)\s*=\s*['"]([^'"]+)['"]/
+    );
+
     if (versionMatch && versionMatch[1]) {
         ScannerPluginVersion = versionMatch[1];
     } else {
