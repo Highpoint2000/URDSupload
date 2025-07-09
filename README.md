@@ -6,7 +6,7 @@ This plugin provides automaticly and manual upload functions for the scanner plu
 
 ## Version 1.1d (only works from web server version 1.3.5!!!)
 
-- Fixed problem with special characters in web server namein in URSD log file
+- Fixed problem with special characters in web server name
 
 ## Installation notes:
 
