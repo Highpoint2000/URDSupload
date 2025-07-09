@@ -1,9 +1,9 @@
 (() => {
   /////////////////////////////////////////////////////////////////////
   ///                                                               ///
-  ///  URDS UPLOADER CLIENT SCRIPT FOR FM-DX-WEBSERVER (V1.1c)      ///
+  ///  URDS UPLOADER CLIENT SCRIPT FOR FM-DX-WEBSERVER (V1.1d)      ///
   ///                                                               ///
-  ///  by Highpoint                last update: 23.06.25            ///
+  ///  by Highpoint                last update: 09.07.25            ///
   ///                                                               ///
   ///  https://github.com/Highpoint2000/URDSupload                  ///
   ///                                                               ///
@@ -17,7 +17,7 @@
 
   /////////////////////////////////////////////////////////////////////
 
-  const pluginVersion = '1.1c'; 
+  const pluginVersion = '1.1d'; 
   const pluginName = "URDS Uploader";
   const pluginHomepageUrl = "https://github.com/Highpoint2000/URDSupload/releases";
   const pluginUpdateUrl = "https://raw.githubusercontent.com/highpoint2000/URDSupload/main/URDS-Uploader/urds-upload.js";
@@ -143,10 +143,6 @@ function checkUpdate(setupOnly, pluginName, urlUpdateLink, urlFetchLink) {
                 let updateConsoleText = "There is a new version of this plugin available";
                 console.log(`[${pluginName}] ${updateConsoleText}`);
                 setupNotify(pluginVersionCheck, newVersion, pluginName, urlUpdateLink);
-                // Optionally, also toast notification:
-                if (typeof sendToast === 'function') {
-                    sendToast('warning important', pluginName, `Update available:<br>${pluginVersionCheck} → ${newVersion}`, false, false);
-                }
             }
         }
     });

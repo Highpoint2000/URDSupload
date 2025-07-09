@@ -1,8 +1,8 @@
 /////////////////////////////////////////////////////////////////////
 ///                                                               ///
-///  URDS Uploader Server Script for FM-DX-Webserver (V1.1c)      ///
+///  URDS Uploader Server Script for FM-DX-Webserver (V1.1d)      ///
 ///                                                               ///
-///  by Highpoint                last update: 23.06.25            ///
+///  by Highpoint                last update: 09.07.25            ///
 ///                                                               ///
 ///  https://github.com/Highpoint2000/URDSupload                  ///
 ///                                                               ///
@@ -155,8 +155,7 @@ if (ValidEmailAddressTo === '') {
 }
 
 if (!ServerName) {
-    ServerName = encodeURIComponent(config.identification.tunerName)
-        .replace(/%20/g, ' '); // Encode and replace encoded spaces with a space character
+    ServerName = config.identification.tunerName || '';
 }
 
 if (!ServerDescription) {
