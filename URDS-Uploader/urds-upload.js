@@ -9,7 +9,7 @@
   ///                                                               ///
   /////////////////////////////////////////////////////////////////////
 
-  ///  This plugin only works with web server version 1.3.5 !!!
+  ///  This plugin only works with scanner version 3.8f !!!
 
   // Enable or disable version check
   const pluginSetupOnlyNotify = true;
