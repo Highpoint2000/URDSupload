@@ -1,9 +1,9 @@
 (() => {
   /////////////////////////////////////////////////////////////////////
   ///                                                               ///
-  ///  URDS UPLOADER CLIENT SCRIPT FOR FM-DX-WEBSERVER (V1.1d)      ///
+  ///  URDS UPLOADER CLIENT SCRIPT FOR FM-DX-WEBSERVER (V1.1e)      ///
   ///                                                               ///
-  ///  by Highpoint                last update: 09.07.25            ///
+  ///  by Highpoint                last update: 07.11.25            ///
   ///                                                               ///
   ///  https://github.com/Highpoint2000/URDSupload                  ///
   ///                                                               ///
@@ -34,8 +34,6 @@
   let sessionId = Math.floor(Math.random() * 1e12)
     .toString()
     .padStart(12, '0');
-
-  const ipApiUrl = 'https://api.ipify.org?format=json'; // Placeholder URL (not used anymore)
 
   let checkSuccessTimer;
 

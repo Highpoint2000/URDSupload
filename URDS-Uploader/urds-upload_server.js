@@ -1,8 +1,8 @@
 /////////////////////////////////////////////////////////////////////
 ///                                                               ///
-///  URDS Uploader Server Script for FM-DX-Webserver (V1.1d)      ///
+///  URDS Uploader Server Script for FM-DX-Webserver (V1.1e)      ///
 ///                                                               ///
-///  by Highpoint                last update: 09.07.25            ///
+///  by Highpoint                last update: 07.11.25            ///
 ///                                                               ///
 ///  https://github.com/Highpoint2000/URDSupload                  ///
 ///                                                               ///
@@ -367,9 +367,9 @@ function countPicodesAndPSInfo(fileContent) {
     lines.forEach((line, index) => {
         const columns = line.split(',');
 
-        // Ensure there are enough columns
-        if (columns.length > 14) {
-            const freq = columns[2].trim();    // 3rd column (index 2) for Frequency
+        // Ensure there are enough columns (at least 15 columns for the data we need)
+        if (columns.length >= 15) {
+            const freq = columns[3].trim();    // 3rd column (index 3) for Frequency
             const picode = columns[12].trim(); // 13th column (index 12) for Picodes
             const psInfo = columns[14].trim(); // 15th column (index 14) for PS Info
 
@@ -382,18 +382,20 @@ function countPicodesAndPSInfo(fileContent) {
                 };
             }
 
-            // Add Picodes to the set if valid
-            if (picode && !picode.includes('?')) {
+            // Add Picodes to the set if valid (not empty and doesn't contain '?')
+            if (picode && picode !== '' && !picode.includes('?')) {
                 freqData[freq].picodes.add(picode);
             }
 
             // Check for valid PS Info
-            if (picode && !picode.includes('?') && psInfo.trim().replace(/["']/g, '') !== '?' && !psInfo.includes('?')) {
+            if (picode && picode !== '' && !picode.includes('?') && 
+                psInfo.trim().replace(/["']/g, '') !== '?' && !psInfo.includes('?')) {
                 freqData[freq].validPsInfo = true;
             }
 
             // Check for distinct Picodes
-            if (picode && !picode.includes('?') && psInfo.trim().replace(/["']/g, '') === '?') {
+            if (picode && picode !== '' && !picode.includes('?') && 
+                psInfo.trim().replace(/["']/g, '') === '?') {
                 freqData[freq].distinctPicode = true;
             }
         }
@@ -416,7 +418,6 @@ function countPicodesAndPSInfo(fileContent) {
             distinctPicodeCount += 1; // Count frequencies with distinct Picodes
         }
     }
-
     return { picodeCount, psInfoCount, distinctPicodeCount };
 }
 

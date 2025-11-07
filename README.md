@@ -4,9 +4,9 @@ This plugin provides automaticly and manual upload functions for the scanner plu
 
 ![image](https://github.com/user-attachments/assets/d52b2e22-59d6-4b64-81c6-449300ef0f36)
 
-## Version 1.1d (only works from web server version 1.3.5!!!)
+## Version 1.1e (only works with scanner plugin 3.8f !!!)
 
-- Fixed problem with special characters in web server name
+- Fixed a problem with the counting and display of PI codes and PS information.
 
 ## Installation notes:
 
@@ -42,6 +42,10 @@ The following variables can be changed in the urds-upload.json:
 - Processing on the FMLIST server takes different amounts of time and only takes place if the OMID and email address match the FMLIST account details 
   
 ## History: 
+
+### Version 1.1d (only works from web server version 1.3.5!!!)
+
+- Fixed problem with special characters in web server name
 
 ### Version 1.1c (only works from web server version 1.3.5!!!)
 
