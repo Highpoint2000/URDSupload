@@ -17,7 +17,7 @@
 
   /////////////////////////////////////////////////////////////////////
 
-  const pluginVersion = '1.1d'; 
+  const pluginVersion = '1.1e'; 
   const pluginName = "URDS Uploader";
   const pluginHomepageUrl = "https://github.com/Highpoint2000/URDSupload/releases";
   const pluginUpdateUrl = "https://raw.githubusercontent.com/highpoint2000/URDSupload/main/URDS-Uploader/urds-upload.js";
